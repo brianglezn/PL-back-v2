@@ -1,16 +1,154 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+
 import { client } from '../config/database';
+import { IUser } from '../models/types';
 
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 
+interface RegisterRequest extends Request {
+    body: {
+        username: string;
+        email: string;
+        password: string;
+        name: string;
+        surname: string;
+    };
+}
 interface LoginRequest extends Request {
     body: {
         identifier: string;
         password: string;
     };
 }
+
+export const register = async (req: RegisterRequest, res: Response) => {
+    try {
+        const { username, email, password, name, surname } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password || !name || !surname) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required',
+                error: 'MISSING_FIELDS'
+            });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format',
+                error: 'INVALID_FORMAT'
+            });
+        }
+
+        // Validate username format (only letters, numbers and hyphens)
+        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({
+                success: false,
+                message: 'The username must be between 3 and 20 characters and can only contain letters, numbers and hyphens',
+                error: 'INVALID_FORMAT'
+            });
+        }
+
+        // Validate strong password
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({
+                success: false,
+                message: 'The password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter and one number',
+                error: 'PASSWORD_TOO_WEAK'
+            });
+        }
+
+        // Check if the email already exists
+        const existingEmail = await usersCollection.findOne({ email: email.toLowerCase() });
+        if (existingEmail) {
+            return res.status(409).json({
+                success: false,
+                message: 'The email is already registered',
+                error: 'EMAIL_EXISTS'
+            });
+        }
+
+        // Check if the username already exists
+        const existingUsername = await usersCollection.findOne({ username: username.toLowerCase() });
+        if (existingUsername) {
+            return res.status(409).json({
+                success: false,
+                message: 'The username is already in use',
+                error: 'USERNAME_EXISTS'
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new user
+        const newUser: IUser = {
+            username: username.toLowerCase(),
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            name,
+            surname,
+            language: 'en',
+            currency: 'USD',
+            dateFormat: 'MM/DD/YYYY',
+            timeFormat: '12h',
+            accountsOrder: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        const result = await usersCollection.insertOne(newUser);
+
+        // Generate JWT
+        const token = jwt.sign(
+            {
+                userId: result.insertedId,
+                email: newUser.email,
+                username: newUser.username
+            },
+            process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
+        );
+
+        // Set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
+        // Send response
+        return res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            user: {
+                id: result.insertedId,
+                username: newUser.username,
+                email: newUser.email,
+                name: newUser.name,
+                language: newUser.language,
+                currency: newUser.currency
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error in registration:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR'
+        });
+    }
+};
 
 export const login = async (req: LoginRequest, res: Response) => {
     try {
