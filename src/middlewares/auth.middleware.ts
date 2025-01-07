@@ -1,47 +1,53 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-    user?: {
+    user: {
         userId: string;
         email: string;
         username: string;
     };
 }
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): void => {
     try {
         const token = req.cookies.token;
 
         if (!token) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
-                message: 'No se proporcionó token',
-                error: 'NO_TOKEN'
+                message: 'No authentication token provided',
+                error: 'UNAUTHORIZED'
             });
+            return;
         }
 
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
-                userId: string;
-                email: string;
-                username: string;
-            };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+            userId: string;
+            email: string;
+            username: string;
+        };
 
-            req.user = decoded;
-            next();
-        } catch (jwtError) {
-            return res.status(401).json({
+        (req as AuthRequest).user = decoded;
+        next();
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            res.status(401).json({
                 success: false,
-                message: 'Token inválido o expirado',
+                message: 'Invalid or expired token',
                 error: 'INVALID_TOKEN'
             });
+            return;
         }
-    } catch (error) {
-        console.error('❌ Error en auth middleware:', error);
-        return res.status(500).json({
+
+        console.error('❌ Error in auth middleware:', error);
+        res.status(500).json({
             success: false,
-            message: 'Error interno del servidor',
+            message: 'Internal server error',
             error: 'SERVER_ERROR'
         });
     }
