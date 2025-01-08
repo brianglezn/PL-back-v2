@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
 import { client } from '../config/database';
 import { IUser } from '../models/types';
+import { getWelcomeEmailTemplate } from '../utils/emailTemplates';
 
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 
@@ -124,6 +126,30 @@ export const register = async (req: RegisterRequest, res: Response) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
+        // Enviar correo de bienvenida
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.hostinger.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: 'no-reply@profit-lost.com',
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
+
+        transporter.sendMail({
+            from: '"Profit-Lost" <no-reply@profit-lost.com>',
+            to: newUser.email,
+            subject: 'Welcome to Profit-Lost!',
+            html: getWelcomeEmailTemplate(newUser.name, 'https://profit-lost.com/dashboard')
+        }, (error, info) => {
+            if (error) {
+                console.error('Error sending welcome email:', error);
+            } else {
+                console.log('Welcome email sent:', info.messageId);
+            }
         });
 
         // Send response
