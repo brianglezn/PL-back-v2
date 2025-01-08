@@ -8,6 +8,7 @@ import type { AuthRequest } from '../middlewares/auth.middleware';
 import { cloudinary } from '../config/cloudinary';
 import type { IUser } from '../models/types';
 import { getAccountDeletionEmailTemplate } from '../utils/emailTemplates';
+import { getCurrentUTCDate } from '../utils/dateUtils';
 
 interface MulterRequest extends AuthRequest {
     file?: Express.Multer.File;
@@ -96,7 +97,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             currency,
             dateFormat,
             timeFormat,
-            updatedAt: new Date()
+            updatedAt: getCurrentUTCDate()
         };
 
         if (req.file) {
@@ -302,7 +303,7 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             { _id: new ObjectId(userId) },
             {
                 $unset: { profileImage: '', profileImagePublicId: '' },
-                $set: { updatedAt: new Date() }
+                $set: { updatedAt: getCurrentUTCDate() }
             }
         );
 

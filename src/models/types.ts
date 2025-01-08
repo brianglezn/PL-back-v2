@@ -8,7 +8,7 @@ export interface IUser {
     name: string;
     surname: string;
     resetToken?: string;
-    resetTokenExpiry?: Date;
+    resetTokenExpiry?: string;
     language: string;
     profileImage?: string;
     profileImagePublicId?: string;
@@ -16,8 +16,8 @@ export interface IUser {
     currency: string;
     dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY';
     timeFormat: '12h' | '24h';
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface ICategory {
@@ -25,8 +25,8 @@ export interface ICategory {
     user_id: ObjectId;
     name: string;
     color: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface IAccount {
@@ -58,13 +58,13 @@ export interface INote {
     updatedAt: Date;
 }
 
-export interface IMovement {
+export interface ITransaction {
     _id?: ObjectId;
     user_id: ObjectId;
-    date: Date;
+    date: string;
     description: string;
     amount: number;
     category: ObjectId;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 } 

@@ -6,6 +6,7 @@ import nodemailer from 'nodemailer';
 import { client } from '../config/database';
 import { IUser } from '../models/types';
 import { getWelcomeEmailTemplate } from '../utils/emailTemplates';
+import { getCurrentUTCDate } from '../utils/dateUtils';
 
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 
@@ -103,8 +104,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             dateFormat: 'MM/DD/YYYY',
             timeFormat: '12h',
             accountsOrder: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: getCurrentUTCDate(),
+            updatedAt: getCurrentUTCDate()
         };
 
         const result = await usersCollection.insertOne(newUser);

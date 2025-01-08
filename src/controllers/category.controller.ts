@@ -1,8 +1,10 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
+
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ICategory } from '../models/types';
+import { getCurrentUTCDate } from '../utils/dateUtils';
 
 const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
 const movementsCollection = client.db(process.env.DB_NAME).collection('movements');
@@ -70,8 +72,8 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             user_id: new ObjectId(userId),
             name,
             color: color.startsWith('#') ? color : `#${color}`,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: getCurrentUTCDate(),
+            updatedAt: getCurrentUTCDate()
         };
 
         const result = await categoriesCollection.insertOne(newCategory);
@@ -125,7 +127,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
                 $set: { 
                     name,
                     color: color.startsWith('#') ? color : `#${color}`,
-                    updatedAt: new Date()
+                    updatedAt: getCurrentUTCDate()
                 } 
             }
         );
