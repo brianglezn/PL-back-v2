@@ -99,7 +99,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             password: hashedPassword,
             name,
             surname,
-            language: 'en',
+            language: 'enUS',
             currency: 'USD',
             dateFormat: 'MM/DD/YYYY',
             timeFormat: '12h',

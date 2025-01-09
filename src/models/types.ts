@@ -9,16 +9,21 @@ export interface IUser {
     surname: string;
     resetToken?: string;
     resetTokenExpiry?: string;
-    language: string;
+    language: Language;
     profileImage?: string;
     profileImagePublicId?: string;
     accountsOrder: string[];
-    currency: string;
-    dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY';
-    timeFormat: '12h' | '24h';
+    currency: Currency;
+    dateFormat: DateFormat;
+    timeFormat: TimeFormat;
     createdAt: string;
     updatedAt: string;
 }
+
+export type Language = 'enUS' | 'esES';
+export type Currency = 'USD' | 'EUR' | 'GBP';
+export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY';
+export type TimeFormat = '12h' | '24h';
 
 export interface ICategory {
     _id?: ObjectId;
