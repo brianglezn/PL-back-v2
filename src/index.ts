@@ -11,7 +11,7 @@ import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
-
+import transactionRoutes from './routes/transaction.routes';
 dotenv.config();
 
 const app: Application = express();
@@ -37,6 +37,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/transactions', transactionRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/notes', noteRoutes);
 
