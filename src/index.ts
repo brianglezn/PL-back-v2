@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
+import noteRoutes from './routes/note.routes';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/notes', noteRoutes);
 
 // Health check endpoint
 app.get('/health', (_, res) => {
