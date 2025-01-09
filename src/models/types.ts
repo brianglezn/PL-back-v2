@@ -34,14 +34,25 @@ export interface ICategory {
     updatedAt: string;
 }
 
+export interface ITransaction {
+    _id?: ObjectId;
+    user_id: ObjectId;
+    date: string;
+    description: string;
+    amount: number;
+    category: ObjectId;
+    createdAt: string;
+    updatedAt: string;
+} 
+
 export interface IAccount {
     _id?: ObjectId;
     user_id: ObjectId;
     accountName: string;
     records: IAccountRecord[];
     configuration: IAccountConfiguration;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 export interface IAccountRecord {
     year: number;
@@ -59,17 +70,6 @@ export interface INote {
     user_id: ObjectId;
     title: string;
     content: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface ITransaction {
-    _id?: ObjectId;
-    user_id: ObjectId;
-    date: string;
-    description: string;
-    amount: number;
-    category: ObjectId;
     createdAt: string;
     updatedAt: string;
-} 
+}
