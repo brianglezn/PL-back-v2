@@ -177,11 +177,29 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         const { userId } = req.user;
         const { date, description, amount, category } = req.body;
 
-        if (!description || typeof amount !== 'number' || !ObjectId.isValid(category)) {
+        if (!ObjectId.isValid(userId) || !ObjectId.isValid(category)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid data provided',
-                error: 'INVALID_DATA'
+                message: 'Invalid ID format',
+                error: 'INVALID_ID_FORMAT'
+            });
+            return;
+        }
+
+        if (typeof amount !== 'number') {
+            res.status(400).json({
+                success: false,
+                message: 'Amount must be a number',
+                error: 'INVALID_AMOUNT'
+            });
+            return;
+        }
+
+        if (typeof description !== 'string' || !description.trim()) {
+            res.status(400).json({
+                success: false,
+                message: 'Description is required',
+                error: 'INVALID_DESCRIPTION'
             });
             return;
         }
@@ -198,7 +216,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         const newTransaction: ITransaction = {
             user_id: new ObjectId(userId),
             date: toUTCDate(date),
-            description,
+            description: description.trim(),
             amount,
             category: new ObjectId(category),
             createdAt: getCurrentUTCDate(),
@@ -206,12 +224,20 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         };
 
         const result = await transactionsCollection.insertOne(newTransaction);
-        const insertedTransaction = await transactionsCollection.findOne({ _id: result.insertedId });
+
+        if (!result.acknowledged) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to create transaction',
+                error: 'DATABASE_ERROR'
+            });
+            return;
+        }
 
         res.status(201).json({
             success: true,
-            data: insertedTransaction,
-            message: 'Transaction created successfully'
+            message: 'Transaction created successfully',
+            data: { ...newTransaction, _id: result.insertedId }
         });
     } catch (error) {
         console.error('❌ Error creating transaction:', error);
