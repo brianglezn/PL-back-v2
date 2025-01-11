@@ -264,33 +264,6 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        if (typeof amount !== 'number') {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid amount provided',
-                error: 'INVALID_AMOUNT'
-            });
-            return;
-        }
-
-        if (typeof description !== 'string' || !description.trim()) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid description provided',
-                error: 'INVALID_DESCRIPTION'
-            });
-            return;
-        }
-
-        if (!DATE_REGEX.test(date)) {
-            res.status(400).json({
-                success: false,
-                message: 'Date must be in format YYYY-MM-DDTHH:mm:ss.sssZ',
-                error: 'INVALID_DATE_FORMAT'
-            });
-            return;
-        }
-
         const result = await transactionsCollection.findOneAndUpdate(
             {
                 _id: new ObjectId(id),
@@ -308,7 +281,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             { returnDocument: 'after' }
         );
 
-        if (!result?.value) {
+        if (!result) {
             res.status(404).json({
                 success: false,
                 message: 'Transaction not found or does not belong to the user',
@@ -320,7 +293,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
         res.status(200).json({
             success: true,
             message: 'Transaction updated successfully',
-            data: result?.value
+            data: result
         });
     } catch (error) {
         console.error('❌ Error updating transaction:', error);
