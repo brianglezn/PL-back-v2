@@ -96,46 +96,35 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
 export const createAccount = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
-        const { accountName } = req.body;
-
-        if (!accountName || typeof accountName !== 'string') {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid account name',
-                error: 'INVALID_DATA'
-            });
-            return;
-        }
-
+        const { accountName, configuration } = req.body;
+        
+        // Solo crear records para el año actual
         const currentYear = new Date().getFullYear();
-        const startYear = currentYear - 2;
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const records = months.map(month => ({
+            year: currentYear,
+            month,
+            value: 0
+        }));
 
-        const records = [];
-        for (let year = startYear; year <= currentYear; year++) {
-            for (const month of months) {
-                records.push({ year, month, value: 0 });
-            }
-        }
-
-        const newAccount: IAccount = {
+        const newAccount = {
             user_id: new ObjectId(userId),
             accountName,
             records,
             configuration: {
-                backgroundColor: "#7e2a10",
-                color: "#ffffff",
+                ...configuration,
                 isActive: true
             },
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
         };
 
-        await accountsCollection.insertOne(newAccount);
+        const result = await accountsCollection.insertOne(newAccount);
 
         res.status(201).json({
             success: true,
-            message: 'Account created successfully'
+            message: 'Account created successfully',
+            data: { ...newAccount, _id: result.insertedId }
         });
     } catch (error) {
         console.error('❌ Error creating account:', error);
@@ -151,7 +140,15 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
     try {
         const { userId } = req.user;
         const { id } = req.params;
-        const { accountName, records, configuration } = req.body;
+        const { accountName, configuration, records } = req.body;
+
+        console.log('Update request:', {
+            userId,
+            accountId: id,
+            accountName,
+            configuration,
+            records
+        });
 
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
@@ -162,23 +159,25 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        const updateData = {
-            ...(accountName && { accountName }),
-            ...(records && { records }),
-            ...(configuration && { configuration }),
+        const updateData: any = {
             updatedAt: getCurrentUTCDate()
         };
 
+        if (accountName) updateData.accountName = accountName;
+        if (configuration) updateData.configuration = configuration;
+        if (records) updateData.records = records;
+
+        console.log('Update data:', updateData);
+
         const result = await accountsCollection.findOneAndUpdate(
-            {
-                _id: new ObjectId(id),
-                user_id: new ObjectId(userId)
-            },
+            { _id: new ObjectId(id), user_id: new ObjectId(userId) },
             { $set: updateData },
             { returnDocument: 'after' }
         );
 
-        if (!result?.value) {
+        console.log('Update result:', result);
+
+        if (!result || !result.value) {
             res.status(404).json({
                 success: false,
                 message: 'Account not found or does not belong to the user',
