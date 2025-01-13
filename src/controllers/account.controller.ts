@@ -97,8 +97,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
     try {
         const { userId } = req.user;
         const { accountName, configuration } = req.body;
-        
-        // Solo crear records para el año actual
+
         const currentYear = new Date().getFullYear();
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const records = months.map(month => ({
@@ -106,14 +105,22 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             month,
             value: 0
         }));
+        if (!accountName || !configuration) {
+            res.status(400).json({
+                success: false,
+                message: 'Missing required fields',
+                error: 'VALIDATION_ERROR'
+            });
+            return;
+        }
 
         const newAccount = {
             user_id: new ObjectId(userId),
             accountName,
-            records,
+            records: records || [],
             configuration: {
                 ...configuration,
-                isActive: true
+                isActive: configuration.isActive ?? true
             },
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
@@ -142,54 +149,70 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         const { id } = req.params;
         const { accountName, configuration, records } = req.body;
 
-        console.log('Update request:', {
-            userId,
-            accountId: id,
-            accountName,
-            configuration,
-            records
-        });
-
-        if (!ObjectId.isValid(id)) {
+        if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid account ID format',
+                message: 'Invalid ID format',
                 error: 'INVALID_ID_FORMAT'
             });
             return;
         }
 
-        const updateData: any = {
-            updatedAt: getCurrentUTCDate()
-        };
+        // Verificar si la cuenta existe
+        const account = await accountsCollection.findOne({
+            _id: new ObjectId(id),
+            user_id: new ObjectId(userId)
+        });
 
-        if (accountName) updateData.accountName = accountName;
-        if (configuration) updateData.configuration = configuration;
-        if (records) updateData.records = records;
-
-        console.log('Update data:', updateData);
-
-        const result = await accountsCollection.findOneAndUpdate(
-            { _id: new ObjectId(id), user_id: new ObjectId(userId) },
-            { $set: updateData },
-            { returnDocument: 'after' }
-        );
-
-        console.log('Update result:', result);
-
-        if (!result || !result.value) {
+        if (!account) {
+            console.error('❌ Account not found during verification:', { id, userId });
             res.status(404).json({
                 success: false,
-                message: 'Account not found or does not belong to the user',
+                message: 'Account not found or unauthorized',
                 error: 'NOT_FOUND'
             });
             return;
         }
 
+        const updateData: Partial<IAccount> = {
+            updatedAt: getCurrentUTCDate()
+        };
+
+        if (accountName !== undefined) updateData.accountName = accountName;
+        if (configuration !== undefined) updateData.configuration = configuration;
+        if (records !== undefined) updateData.records = records;
+
+        const result = await accountsCollection.findOneAndUpdate(
+            {
+                _id: new ObjectId(id),
+                user_id: new ObjectId(userId)
+            },
+            { $set: updateData },
+            {
+                returnDocument: 'after'
+            }
+        );
+
+        if (!result || !result.value) {
+            console.error('❌ Error en la actualización:', result);
+            res.status(500).json({
+                success: false,
+                message: 'Error updating account',
+                error: 'UPDATE_ERROR'
+            });
+            return;
+        }
+
+        const updatedAccount = {
+            ...result.value,
+            _id: result.value._id.toString(),
+            user_id: result.value.user_id.toString()
+        };
+
         res.status(200).json({
             success: true,
             message: 'Account updated successfully',
-            data: result.value
+            data: updatedAccount
         });
     } catch (error) {
         console.error('❌ Error updating account:', error);
