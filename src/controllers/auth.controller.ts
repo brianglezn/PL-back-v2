@@ -31,14 +31,18 @@ interface LoginRequest extends Request {
  * Set a cookie in the response.
  */
 function setCookie(res: Response, token: string) {
-    res.cookie('token', token, {
+    console.log('🍪 Configurando cookie con token');
+    const cookieOptions = {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'none' as const,
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.profit-lost.com' : undefined
-    });
+        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    };
+    console.log('🔧 Opciones de cookie:', cookieOptions);
+    res.cookie('token', token, cookieOptions);
+    console.log('✅ Cookie configurada');
 }
 
 /**

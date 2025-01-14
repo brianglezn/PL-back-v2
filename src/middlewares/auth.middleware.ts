@@ -24,7 +24,10 @@ export const authMiddleware = (
     next: NextFunction
 ): void => {
     try {
+        console.log('📨 Headers received:', req.headers);
         console.log('🍪 Cookies received:', req.cookies);
+        console.log('🔑 Cookie token:', req.cookies.token);
+        
         const token = req.cookies.token;
         
         if (!token) {
