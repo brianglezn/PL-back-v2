@@ -24,14 +24,9 @@ export const authMiddleware = (
     next: NextFunction
 ): void => {
     try {
-        console.log('📨 Headers received:', req.headers);
-        console.log('🍪 Cookies received:', req.cookies);
-        console.log('🔑 Cookie token:', req.cookies.token);
-        
         const token = req.cookies.token;
-        
+
         if (!token) {
-            console.log('❌ No token found in cookies');
             res.status(401).json({
                 success: false,
                 message: 'No authentication token provided',
@@ -40,13 +35,11 @@ export const authMiddleware = (
             return;
         }
 
-        console.log('🔑 Token found, attempting to verify...');
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
             userId: string;
             email: string;
             username: string;
         };
-        console.log('✅ Token verified successfully');
 
         (req as AuthRequest).user = decoded;
         next();

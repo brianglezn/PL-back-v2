@@ -31,7 +31,6 @@ interface LoginRequest extends Request {
  * Set a cookie in the response.
  */
 function setCookie(res: Response, token: string) {
-    console.log('🍪 Configurando cookie con token');
     const cookieOptions = {
         httpOnly: true,
         secure: true,
@@ -40,9 +39,7 @@ function setCookie(res: Response, token: string) {
         path: '/',
         domain: undefined
     };
-    console.log('🔧 Opciones de cookie:', cookieOptions);
     res.cookie('token', token, cookieOptions);
-    console.log('✅ Cookie configurada');
 }
 
 /**

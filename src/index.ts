@@ -24,11 +24,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
     origin: (origin, callback) => {
         const allowedOrigins = ['https://pl2.profit-lost.com', 'http://localhost:5173'];
-        console.log('🔒 Request origin:', origin);
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            console.log('❌ Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -48,19 +46,6 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/notes', noteRoutes);
-
-// Agregar en src/index.ts después de los middlewares
-app.get('/api/test-cookies', (req, res) => {
-    console.log('📝 Test cookies endpoint');
-    console.log('Cookies:', req.cookies);
-    res.json({
-        cookies: req.cookies,
-        headers: {
-            origin: req.headers.origin,
-            cookie: req.headers.cookie
-        }
-    });
-});
 
 // Health check endpoint
 app.get('/health', (_, res) => {
