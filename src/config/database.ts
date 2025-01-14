@@ -1,4 +1,4 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient, ServerApiVersion } from 'mongodb';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -22,20 +22,20 @@ async function connectDB() {
     try {
         // Connect to the server
         await client.connect();
-        console.log("✅ MongoDB connected successfully");
+        console.log('✅ MongoDB connected successfully');
 
         // Send a ping to confirm the connection
-        const pingResult = await client.db("admin").command({ ping: 1 });
-        console.log("📡 MongoDB ping result:", pingResult);
+        const pingResult = await client.db('admin').command({ ping: 1 });
+        console.log('📡 MongoDB ping result:', pingResult);
 
         return client.db(DB_NAME);
     } catch (error) {
-        console.error("❌ Error connecting to MongoDB:", error);
+        console.error('❌ Error connecting to MongoDB:', error);
         // Try to close the client if there is an error
         try {
             await client.close();
         } catch (closeError) {
-            console.error("❌ Error closing MongoDB connection:", closeError);
+            console.error('❌ Error closing MongoDB connection:', closeError);
         }
         process.exit(1); // Exit the process with error
     }
