@@ -12,15 +12,18 @@ import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
+
+// Load environment variables from .env file
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
+// Enable Cross-Origin Resource Sharing (CORS) for specific origins
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = ['https://v2.profit-lost.com', 'http://localhost:5173'];
+        const allowedOrigins = ['https://pl-front-v2.onrender.com', 'http://localhost:5173'];
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -33,7 +36,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
 
-// Routes
+// API endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -46,7 +49,7 @@ app.get('/health', (_, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Initialize server
+// Initialize server and database connection
 async function initializeServer() {
     try {
         await connectDB();

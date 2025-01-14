@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import { 
+import {
     getAllTransactions,
     getTransactionsByYear,
     getTransactionsByYearAndMonth,
@@ -12,17 +12,19 @@ import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware
 
 const router = Router();
 
+// Type-safe wrapper for asynchronous controllers
+// Ensures proper error handling for async/await functions
 const wrapHandler = (handler: (req: AuthRequest, res: Response) => Promise<void>): RequestHandler => {
     return async (req, res, next) => {
         try {
-            await handler(req as AuthRequest, res);
+            await handler(req as AuthRequest, res); // Typecast the request to include AuthRequest
         } catch (error) {
-            next(error);
+            next(error); // Forward errors to the next middleware (error handler)
         }
     };
 };
 
-// Rutas
+// Routes
 router.get('/all', authMiddleware, wrapHandler(getAllTransactions));
 router.get('/:year', authMiddleware, wrapHandler(getTransactionsByYear));
 router.get('/:year/:month', authMiddleware, wrapHandler(getTransactionsByYearAndMonth));

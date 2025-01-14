@@ -3,15 +3,20 @@ import { ObjectId } from 'mongodb';
 
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
-import type { ITransaction } from '../models/types';
+import type { ITransaction } from '../types/models/ITransaction';
 import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
 
+// MongoDB transactions collection
 const transactionsCollection = client.db(process.env.DB_NAME).collection('movements');
 
+/**
+ * Get all transactions for the authenticated user.
+ */
 export const getAllTransactions = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -21,6 +26,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
+        // Fetch transactions from the database
         const transactions = await transactionsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -44,6 +50,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             }
         ]).toArray();
 
+        // Return transactions
         res.status(200).json({
             success: true,
             data: transactions
@@ -58,11 +65,15 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
     }
 };
 
+/**
+ * Get transactions by year for the authenticated user.
+ */
 export const getTransactionsByYear = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { year } = req.params;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -72,6 +83,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             return;
         }
 
+        // Fetch transactions from the database
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -100,6 +112,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             }
         ]).toArray();
 
+        // Return transactions
         res.status(200).json({
             success: true,
             data: transactions
@@ -114,11 +127,15 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
     }
 };
 
+/**
+ * Get transactions by year and month for the authenticated user.
+ */
 export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { year, month } = req.params;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -128,8 +145,9 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             return;
         }
 
-        const monthRegex = month ? `-${month}` : "";
-        
+        const monthRegex = month ? `-${month}` : '';
+
+        // Fetch transactions from the database
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -158,6 +176,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             }
         ]).toArray();
 
+        // Return transactions
         res.status(200).json({
             success: true,
             data: transactions
@@ -172,11 +191,15 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
     }
 };
 
+/**
+ * Create a new transaction for the authenticated user.
+ */
 export const createTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { date, description, amount, category } = req.body;
 
+        // Validate user ID and category ID format
         if (!ObjectId.isValid(userId) || !ObjectId.isValid(category)) {
             res.status(400).json({
                 success: false,
@@ -186,6 +209,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Validate amount format
         if (typeof amount !== 'number') {
             res.status(400).json({
                 success: false,
@@ -195,6 +219,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Validate description format
         if (typeof description !== 'string' || !description.trim()) {
             res.status(400).json({
                 success: false,
@@ -204,6 +229,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Validate date format
         if (!DATE_REGEX.test(date)) {
             res.status(400).json({
                 success: false,
@@ -213,6 +239,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Create new transaction
         const newTransaction: ITransaction = {
             user_id: new ObjectId(userId),
             date: toUTCDate(date),
@@ -223,8 +250,10 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             updatedAt: getCurrentUTCDate()
         };
 
+        // Insert new transaction into the database
         const result = await transactionsCollection.insertOne(newTransaction);
 
+        // Check if insertion was successful
         if (!result.acknowledged) {
             res.status(500).json({
                 success: false,
@@ -234,6 +263,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Return success message
         res.status(201).json({
             success: true,
             message: 'Transaction created successfully',
@@ -249,12 +279,16 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     }
 };
 
+/**
+ * Update an existing transaction for the authenticated user.
+ */
 export const updateTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
         const { date, description, amount, category } = req.body;
 
+        // Validate ID format
         if (!ObjectId.isValid(id) || !ObjectId.isValid(category)) {
             res.status(400).json({
                 success: false,
@@ -264,6 +298,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Update transaction in the database
         const result = await transactionsCollection.findOneAndUpdate(
             {
                 _id: new ObjectId(id),
@@ -281,6 +316,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             { returnDocument: 'after' }
         );
 
+        // Check if update was successful
         if (!result) {
             res.status(404).json({
                 success: false,
@@ -290,6 +326,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Return success message
         res.status(200).json({
             success: true,
             message: 'Transaction updated successfully',
@@ -305,11 +342,15 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
     }
 };
 
+/**
+ * Delete an existing transaction for the authenticated user.
+ */
 export const deleteTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
 
+        // Validate ID format
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -319,11 +360,13 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Delete transaction from the database
         const result = await transactionsCollection.deleteOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
         });
 
+        // Check if deletion was successful
         if (result.deletedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -333,6 +376,7 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Return success message
         res.status(200).json({
             success: true,
             message: 'Transaction deleted successfully'

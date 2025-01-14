@@ -3,15 +3,20 @@ import { ObjectId } from 'mongodb';
 
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
-import type { IAccount } from '../models/types';
+import type { IAccount } from '../types/models/IAccount';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
+// MongoDB accounts collection
 const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
 
+/**
+ * Get all accounts for the authenticated user.
+ */
 export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -21,6 +26,7 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // Fetch accounts from the database
         const accounts = await accountsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -33,6 +39,7 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             }
         ]).toArray();
 
+        // Return success message
         res.status(200).json({
             success: true,
             data: accounts
@@ -47,11 +54,15 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
     }
 };
 
+/**
+ * Get accounts by year for the authenticated user.
+ */
 export const getAccountsByYear = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { year } = req.params;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -61,6 +72,7 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Fetch accounts from the database
         const accounts = await accountsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -69,9 +81,9 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
                     accountName: 1,
                     records: {
                         $filter: {
-                            input: "$records",
-                            as: "record",
-                            cond: { $eq: ["$$record.year", parseInt(year)] }
+                            input: '$records',
+                            as: 'record',
+                            cond: { $eq: ['$$record.year', parseInt(year)] }
                         }
                     },
                     configuration: 1
@@ -79,6 +91,7 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             }
         ]).toArray();
 
+        // Return success message
         res.status(200).json({
             success: true,
             data: accounts
@@ -93,6 +106,9 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
     }
 };
 
+/**
+ * Create a new account for the authenticated user.
+ */
 export const createAccount = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
@@ -114,6 +130,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
+        // Create new account
         const newAccount = {
             user_id: new ObjectId(userId),
             accountName,
@@ -126,8 +143,10 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             updatedAt: getCurrentUTCDate()
         };
 
+        // Insert new account into the database
         const result = await accountsCollection.insertOne(newAccount);
 
+        // Return success message
         res.status(201).json({
             success: true,
             message: 'Account created successfully',
@@ -143,12 +162,16 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
+/**
+ * Update an existing account for the authenticated user.
+ */
 export const updateAccount = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
         const { accountName, configuration, records } = req.body;
 
+        // Validate ID format
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -158,12 +181,11 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Verificar si la cuenta existe
+        // Check if the account exists
         const account = await accountsCollection.findOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
         });
-
         if (!account) {
             console.error('❌ Account not found during verification:', { id, userId });
             res.status(404).json({
@@ -174,14 +196,17 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
+        // Prepare update data
         const updateData: Partial<IAccount> = {
             updatedAt: getCurrentUTCDate()
         };
 
+        // Update fields if provided
         if (accountName !== undefined) updateData.accountName = accountName;
         if (configuration !== undefined) updateData.configuration = configuration;
         if (records !== undefined) updateData.records = records;
 
+        // Update account in the database
         const result = await accountsCollection.findOneAndUpdate(
             {
                 _id: new ObjectId(id),
@@ -193,6 +218,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             }
         );
 
+        // Check if update was successful
         if (!result || !result.value) {
             console.error('❌ Error en la actualización:', result);
             res.status(500).json({
@@ -203,12 +229,14 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
+        // Prepare the updated account for response
         const updatedAccount = {
             ...result.value,
             _id: result.value._id.toString(),
             user_id: result.value.user_id.toString()
         };
 
+        // Return success message
         res.status(200).json({
             success: true,
             message: 'Account updated successfully',
@@ -224,11 +252,15 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
+/**
+ * Delete an existing account for the authenticated user.
+ */
 export const deleteAccount = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
 
+        // Validate ID format
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -238,11 +270,13 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
+        // Delete account from the database
         const result = await accountsCollection.deleteOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
         });
 
+        // Check if deletion was successful
         if (result.deletedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -252,6 +286,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
+        // Return success message
         res.status(200).json({
             success: true,
             message: 'Account deleted successfully'

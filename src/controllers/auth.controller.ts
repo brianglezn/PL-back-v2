@@ -4,10 +4,11 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 
 import { client } from '../config/database';
-import { IUser } from '../models/types';
+import { IUser } from '../types/models/IUser';
 import { getWelcomeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
+// MongoDB users collection
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 
 interface RegisterRequest extends Request {
@@ -26,6 +27,9 @@ interface LoginRequest extends Request {
     };
 }
 
+/**
+ * Register a new user.
+ */
 export const register = async (req: RegisterRequest, res: Response) => {
     try {
         const { username, email, password, name, surname } = req.body;
@@ -177,6 +181,9 @@ export const register = async (req: RegisterRequest, res: Response) => {
     }
 };
 
+/**
+ * Login a user.
+ */
 export const login = async (req: LoginRequest, res: Response) => {
     try {
         const { identifier, password } = req.body;
@@ -207,6 +214,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             ]
         });
 
+        // Check if user exists
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -248,6 +256,7 @@ export const login = async (req: LoginRequest, res: Response) => {
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.password);
 
+        // Check if password is valid
         if (!isValidPassword) {
             // Increment attempts
             await usersCollection.updateOne(
@@ -321,6 +330,9 @@ export const login = async (req: LoginRequest, res: Response) => {
     }
 };
 
+/**
+ * Logout the user.
+ */
 export const logout = async (_: Request, res: Response) => {
     res.clearCookie('token');
     return res.status(200).json({

@@ -2,16 +2,21 @@ import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
-import type { INote } from '../models/types';
+import type { INote } from '../types/models/INote';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 import { encryptText, decryptText } from '../utils/encryption';
 
+// MongoDB notes collection
 const notesCollection = client.db(process.env.DB_NAME).collection('notes');
 
+/**
+ * Get all notes for the authenticated user.
+ */
 export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -21,12 +26,14 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
+        // Fetch notes from the database
         const notes = await notesCollection.find({ user_id: new ObjectId(userId) }).toArray();
         const decryptedNotes = notes.map(note => ({
             ...note,
             content: note.content ? decryptText(note.content) : ''
         }));
 
+        // Return notes
         res.status(200).json({
             success: true,
             data: decryptedNotes
@@ -41,11 +48,15 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
     }
 };
 
+/**
+ * Create a new note for the authenticated user.
+ */
 export const createNote = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { title, content } = req.body;
 
+        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -55,6 +66,7 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Create new note
         const newNote: INote = {
             user_id: new ObjectId(userId),
             title: title || 'Untitled Note',
@@ -63,9 +75,11 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             updatedAt: getCurrentUTCDate()
         };
 
+        // Insert new note into the database
         const result = await notesCollection.insertOne(newNote);
         const insertedNote = await notesCollection.findOne({ _id: result.insertedId });
 
+        // Check if insertion was successful
         if (!insertedNote) {
             res.status(500).json({
                 success: false,
@@ -75,8 +89,8 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Return success message
         insertedNote.content = insertedNote.content ? decryptText(insertedNote.content) : '';
-
         res.status(201).json({
             success: true,
             message: 'Note created successfully',
@@ -92,12 +106,16 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
     }
 };
 
+/**
+ * Update an existing note for the authenticated user.
+ */
 export const updateNote = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
         const { title, content } = req.body;
 
+        // Validate ID format
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -107,10 +125,11 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Update note in the database
         const result = await notesCollection.findOneAndUpdate(
-            { 
-                _id: new ObjectId(id), 
-                user_id: new ObjectId(userId) 
+            {
+                _id: new ObjectId(id),
+                user_id: new ObjectId(userId)
             },
             {
                 $set: {
@@ -122,6 +141,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             { returnDocument: 'after' }
         );
 
+        // Check if update was successful
         if (!result?.value) {
             res.status(404).json({
                 success: false,
@@ -131,8 +151,8 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Return success message
         result.value.content = result.value.content ? decryptText(result.value.content) : '';
-
         res.status(200).json({
             success: true,
             message: 'Note updated successfully',
@@ -148,11 +168,15 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
     }
 };
 
+/**
+ * Delete an existing note for the authenticated user.
+ */
 export const deleteNote = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
 
+        // Validate ID format
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -162,11 +186,13 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Delete note from the database
         const result = await notesCollection.deleteOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
         });
 
+        // Check if deletion was successful
         if (result.deletedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -176,6 +202,7 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Return success message
         res.status(200).json({
             success: true,
             message: 'Note deleted successfully'
