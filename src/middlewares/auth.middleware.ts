@@ -24,11 +24,11 @@ export const authMiddleware = (
     next: NextFunction
 ): void => {
     try {
-        // Extract the token from cookies
+        console.log('🍪 Cookies received:', req.cookies);
         const token = req.cookies.token;
-
-        // Check if the token exists
+        
         if (!token) {
+            console.log('❌ No token found in cookies');
             res.status(401).json({
                 success: false,
                 message: 'No authentication token provided',
@@ -37,19 +37,18 @@ export const authMiddleware = (
             return;
         }
 
-        // Verify and decode the JWT token
+        console.log('🔑 Token found, attempting to verify...');
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
             userId: string;
             email: string;
             username: string;
         };
+        console.log('✅ Token verified successfully');
 
-        // Attach the decoded user information to the request object
         (req as AuthRequest).user = decoded;
-
-        // Call the next middleware or route handler
         next();
     } catch (error) {
+        console.error('❌ Error in auth middleware:', error);
         // Handle specific JWT errors
         if (error instanceof jwt.JsonWebTokenError) {
             res.status(401).json({
@@ -61,7 +60,6 @@ export const authMiddleware = (
         }
 
         // Handle any other errors
-        console.error('❌ Error in auth middleware:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
