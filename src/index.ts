@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 // Enable Cross-Origin Resource Sharing (CORS) for specific origins
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = ['https://profit-lost.com', 'http://localhost:5173'];
+        const allowedOrigins = ['https://pl2.profit-lost.com', 'http://localhost:5173'];
         console.log('🔒 Request origin:', origin);
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
