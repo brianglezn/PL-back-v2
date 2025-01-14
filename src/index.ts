@@ -53,7 +53,7 @@ app.use('/api/notes', noteRoutes);
 app.get('/api/test-cookies', (req, res) => {
     console.log('📝 Test cookies endpoint');
     console.log('Cookies:', req.cookies);
-    res.json({ 
+    res.json({
         cookies: req.cookies,
         headers: {
             origin: req.headers.origin,

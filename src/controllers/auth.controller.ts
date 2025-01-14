@@ -28,6 +28,20 @@ interface LoginRequest extends Request {
 }
 
 /**
+ * Set a cookie in the response.
+ */
+function setCookie(res: Response, token: string) {
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.profit-lost.com' : undefined
+    });
+}
+
+/**
  * Register a new user.
  */
 export const register = async (req: RegisterRequest, res: Response) => {
@@ -126,14 +140,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
         );
 
         // Set cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.profit-lost.com' : undefined
-        });
+        setCookie(res, token);
 
         // Enviar correo de bienvenida
         const transporter = nodemailer.createTransport({
@@ -301,14 +308,7 @@ export const login = async (req: LoginRequest, res: Response) => {
         );
 
         // Set HTTP-only cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? 'profit-lost.com' : undefined
-        });
+        setCookie(res, token);
 
         // Send response
         return res.status(200).json({
