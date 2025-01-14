@@ -191,7 +191,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(404).json({
                 success: false,
                 message: 'Account not found or unauthorized',
-                error: 'NOT_FOUND'
+                error: 'ACCOUNT_NOT_FOUND'
             });
             return;
         }
@@ -281,7 +281,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(404).json({
                 success: false,
                 message: 'Account not found or does not belong to the user',
-                error: 'NOT_FOUND'
+                error: 'ACCOUNT_NOT_FOUND'
             });
             return;
         }

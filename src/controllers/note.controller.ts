@@ -146,7 +146,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(404).json({
                 success: false,
                 message: 'Note not found or does not belong to the user',
-                error: 'NOT_FOUND'
+                error: 'NOTE_NOT_FOUND'
             });
             return;
         }
@@ -197,7 +197,7 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(404).json({
                 success: false,
                 message: 'Note not found or does not belong to the user',
-                error: 'NOT_FOUND'
+                error: 'NOTE_NOT_FOUND'
             });
             return;
         }

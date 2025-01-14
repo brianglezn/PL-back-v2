@@ -321,7 +321,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'Transaction not found or does not belong to the user',
-                error: 'NOT_FOUND'
+                error: 'TRANSACTION_NOT_FOUND'
             });
             return;
         }
@@ -371,7 +371,7 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'Transaction not found or does not belong to the user',
-                error: 'NOT_FOUND'
+                error: 'TRANSACTION_NOT_FOUND'
             });
             return;
         }

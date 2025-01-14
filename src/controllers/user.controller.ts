@@ -236,7 +236,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'NOT_FOUND'
+                error: 'USER_NOT_FOUND'
             });
             return;
         }
@@ -330,7 +330,7 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'NOT_FOUND'
+                error: 'USER_NOT_FOUND'
             });
             return;
         }
@@ -392,7 +392,7 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'NOT_FOUND'
+                error: 'USER_NOT_FOUND'
             });
             return;
         }
@@ -423,7 +423,7 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'NOT_FOUND'
+                error: 'USER_NOT_FOUND'
             });
             return;
         }
@@ -490,7 +490,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'NOT_FOUND'
+                error: 'USER_NOT_FOUND'
             });
             return;
         }

@@ -160,7 +160,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'Category not found',
-                error: 'NOT_FOUND'
+                error: 'CATEGORY_NOT_FOUND'
             });
             return;
         }
@@ -225,7 +225,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'Category not found',
-                error: 'NOT_FOUND'
+                error: 'CATEGORY_NOT_FOUND'
             });
             return;
         }
