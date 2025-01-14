@@ -176,22 +176,8 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(400).json({
                 success: false,
                 message: 'Invalid ID format',
-                error: 'INVALID_ID_FORMAT'
-            });
-            return;
-        }
-
-        // Check if the account exists
-        const account = await accountsCollection.findOne({
-            _id: new ObjectId(id),
-            user_id: new ObjectId(userId)
-        });
-        if (!account) {
-            console.error('❌ Account not found during verification:', { id, userId });
-            res.status(404).json({
-                success: false,
-                message: 'Account not found or unauthorized',
-                error: 'ACCOUNT_NOT_FOUND'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -201,7 +187,6 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             updatedAt: getCurrentUTCDate()
         };
 
-        // Update fields if provided
         if (accountName !== undefined) updateData.accountName = accountName;
         if (configuration !== undefined) updateData.configuration = configuration;
         if (records !== undefined) updateData.records = records;
@@ -219,11 +204,11 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         );
 
         // Check if update was successful
-        if (!result || !result.value) {
-            console.error('❌ Error en la actualización:', result);
+        if (!result) {
+            console.error('❌ Error in the update: Account not found');
             res.status(404).json({
                 success: false,
-                message: 'Account not found or could not be updated',
+                message: 'Account not found',
                 error: 'ACCOUNT_NOT_FOUND',
                 statusCode: 404
             });
@@ -232,23 +217,25 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
 
         // Prepare the updated account for response
         const updatedAccount = {
-            ...result.value,
-            _id: result.value._id.toString(),
-            user_id: result.value.user_id.toString()
+            ...result,
+            _id: result._id.toString(),
+            user_id: result.user_id.toString()
         };
 
         // Return success message
         res.status(200).json({
             success: true,
             message: 'Account updated successfully',
-            data: updatedAccount
+            data: updatedAccount,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating account:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
