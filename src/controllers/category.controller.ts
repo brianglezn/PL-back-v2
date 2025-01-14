@@ -61,23 +61,24 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Name and color are required',
-                error: 'MISSING_FIELDS'
+                error: 'MISSING_FIELDS',
+                statusCode: 400
             });
             return;
         }
 
         // Check if category with the same name already exists
         const existingCategory = await categoriesCollection.findOne({
-            name,
+            name: name.toLowerCase(),
             user_id: new ObjectId(userId)
         });
 
-        // Check if category with the same name already exists
         if (existingCategory) {
             res.status(409).json({
                 success: false,
                 message: 'Category with this name already exists',
-                error: 'DUPLICATE_CATEGORY'
+                error: 'DUPLICATE_CATEGORY',
+                statusCode: 409
             });
             return;
         }
@@ -93,20 +94,21 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
 
         // Insert new category into the database
         const result = await categoriesCollection.insertOne(newCategory);
-        const insertedCategory = await categoriesCollection.findOne({ _id: result.insertedId });
 
         // Return success message
         res.status(201).json({
             success: true,
             message: 'Category created successfully',
-            data: insertedCategory
+            data: { ...newCategory, _id: result.insertedId },
+            statusCode: 201
         });
     } catch (error) {
         console.error('❌ Error creating category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };

@@ -204,7 +204,8 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Invalid ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -214,7 +215,8 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Amount must be a number',
-                error: 'INVALID_AMOUNT'
+                error: 'INVALID_AMOUNT',
+                statusCode: 400
             });
             return;
         }
@@ -224,7 +226,8 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Description is required',
-                error: 'INVALID_DESCRIPTION'
+                error: 'INVALID_DESCRIPTION',
+                statusCode: 400
             });
             return;
         }
@@ -234,12 +237,12 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Date must be in format YYYY-MM-DDTHH:mm:ss.sssZ',
-                error: 'INVALID_DATE_FORMAT'
+                error: 'INVALID_DATE_FORMAT',
+                statusCode: 400
             });
             return;
         }
 
-        // Create new transaction
         const newTransaction: ITransaction = {
             user_id: new ObjectId(userId),
             date: toUTCDate(date),
@@ -250,31 +253,21 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             updatedAt: getCurrentUTCDate()
         };
 
-        // Insert new transaction into the database
         const result = await transactionsCollection.insertOne(newTransaction);
 
-        // Check if insertion was successful
-        if (!result.acknowledged) {
-            res.status(500).json({
-                success: false,
-                message: 'Failed to create transaction',
-                error: 'DATABASE_ERROR'
-            });
-            return;
-        }
-
-        // Return success message
         res.status(201).json({
             success: true,
             message: 'Transaction created successfully',
-            data: { ...newTransaction, _id: result.insertedId }
+            data: { ...newTransaction, _id: result.insertedId },
+            statusCode: 201
         });
     } catch (error) {
         console.error('❌ Error creating transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };

@@ -221,10 +221,11 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         // Check if update was successful
         if (!result || !result.value) {
             console.error('❌ Error en la actualización:', result);
-            res.status(500).json({
+            res.status(404).json({
                 success: false,
-                message: 'Error updating account',
-                error: 'UPDATE_ERROR'
+                message: 'Account not found or could not be updated',
+                error: 'ACCOUNT_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }

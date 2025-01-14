@@ -30,7 +30,8 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -43,7 +44,8 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -63,14 +65,16 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 currency: user.currency,
                 dateFormat: user.dateFormat,
                 timeFormat: user.timeFormat,
-            }
+            },
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting user data:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };

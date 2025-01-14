@@ -61,16 +61,27 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
 
-        // Create new note
+        // Validate required fields
+        if (!title || !content) {
+            res.status(400).json({
+                success: false,
+                message: 'Title and content are required',
+                error: 'MISSING_FIELDS',
+                statusCode: 400
+            });
+            return;
+        }
+
         const newNote: INote = {
             user_id: new ObjectId(userId),
-            title: title || 'Untitled Note',
-            content: content ? encryptText(content) : '',
+            title,
+            content: encryptText(content),
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
         };
@@ -83,25 +94,29 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
         if (!insertedNote) {
             res.status(500).json({
                 success: false,
-                message: 'Error retrieving created note',
-                error: 'DATABASE_ERROR'
+                message: 'Error creating note',
+                error: 'DATABASE_ERROR',
+                statusCode: 500
             });
             return;
         }
 
-        // Return success message
-        insertedNote.content = insertedNote.content ? decryptText(insertedNote.content) : '';
+        // Decrypt content for response
+        insertedNote.content = decryptText(insertedNote.content);
+        
         res.status(201).json({
             success: true,
             message: 'Note created successfully',
-            data: insertedNote
+            data: insertedNote,
+            statusCode: 201
         });
     } catch (error) {
         console.error('❌ Error creating note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
