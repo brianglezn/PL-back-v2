@@ -38,7 +38,7 @@ function setCookie(res: Response, token: string) {
         sameSite: 'none' as const,
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+        domain: undefined
     };
     console.log('🔧 Opciones de cookie:', cookieOptions);
     res.cookie('token', token, cookieOptions);
