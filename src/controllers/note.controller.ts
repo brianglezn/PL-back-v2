@@ -16,7 +16,6 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -26,23 +25,22 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Fetch notes from the database
         const notes = await notesCollection.find({ user_id: new ObjectId(userId) }).toArray();
         const decryptedNotes = notes.map(note => ({
             ...note,
             content: note.content ? decryptText(note.content) : ''
         }));
 
-        // Return notes
         res.status(200).json({
             success: true,
+            message: 'Notes retrieved successfully',
             data: decryptedNotes
         });
     } catch (error) {
         console.error('❌ Error getting notes:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Error retrieving notes',
             error: 'DATABASE_ERROR'
         });
     }
