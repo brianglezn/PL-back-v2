@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ICategory } from '../types/models/ICategory';
-import { getCurrentUTCDate } from '../utils/dateUtils';
+import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
 
 // MongoDB categories collection
 const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
@@ -23,7 +23,8 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -36,14 +37,16 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
         // Return success message
         res.status(200).json({
             success: true,
-            data: categories
+            data: categories,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting categories:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -92,6 +95,17 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             updatedAt: getCurrentUTCDate()
         };
 
+        // Validate date format
+        if (!DATE_REGEX.test(newCategory.createdAt) || !DATE_REGEX.test(newCategory.updatedAt)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid date format',
+                error: 'INVALID_DATE_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+
         // Insert new category into the database
         const result = await categoriesCollection.insertOne(newCategory);
 
@@ -127,7 +141,8 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Invalid category ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -137,7 +152,8 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Name and color are required',
-                error: 'MISSING_FIELDS'
+                error: 'MISSING_FIELDS',
+                statusCode: 400
             });
             return;
         }
@@ -162,7 +178,8 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'Category not found',
-                error: 'CATEGORY_NOT_FOUND'
+                error: 'CATEGORY_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -170,14 +187,16 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Category updated successfully'
+            message: 'Category updated successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -195,7 +214,8 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Invalid category ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -211,7 +231,8 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Cannot delete category with associated movements',
-                error: 'CATEGORY_IN_USE'
+                error: 'CATEGORY_IN_USE',
+                statusCode: 400
             });
             return;
         }
@@ -227,7 +248,8 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'Category not found',
-                error: 'CATEGORY_NOT_FOUND'
+                error: 'CATEGORY_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -235,14 +257,16 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Category deleted successfully'
+            message: 'Category deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
