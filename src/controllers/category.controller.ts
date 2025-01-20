@@ -8,8 +8,8 @@ import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
 
 // MongoDB categories collection
 const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
-// MongoDB movements collection
-const movementsCollection = client.db(process.env.DB_NAME).collection('movements');
+// MongoDB transactions collection
+const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
  * Get all categories for the authenticated user.
@@ -221,7 +221,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
         }
 
         // Check if category has associated movements
-        const movementsCount = await movementsCollection.countDocuments({
+        const movementsCount = await transactionsCollection.countDocuments({
             user_id: new ObjectId(userId),
             category: new ObjectId(id)
         });

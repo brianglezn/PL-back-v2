@@ -7,7 +7,7 @@ import type { ITransaction } from '../types/models/ITransaction';
 import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
 
 // MongoDB transactions collection
-const transactionsCollection = client.db(process.env.DB_NAME).collection('movements');
+const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
  * Get all transactions for the authenticated user.
