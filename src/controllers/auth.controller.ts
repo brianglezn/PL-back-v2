@@ -54,7 +54,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'All fields are required',
-                error: 'MISSING_FIELDS'
+                error: 'MISSING_FIELDS',
+                statusCode: 400
             });
         }
 
@@ -64,7 +65,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid email format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
         }
 
@@ -74,7 +76,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'The username must be between 3 and 20 characters and can only contain letters, numbers and hyphens',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
         }
 
@@ -84,7 +87,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'The password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter and one number',
-                error: 'PASSWORD_TOO_WEAK'
+                error: 'PASSWORD_TOO_WEAK',
+                statusCode: 400
             });
         }
 
@@ -94,7 +98,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(409).json({
                 success: false,
                 message: 'The email is already registered',
-                error: 'EMAIL_EXISTS'
+                error: 'EMAIL_EXISTS',
+                statusCode: 409
             });
         }
 
@@ -104,7 +109,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             return res.status(409).json({
                 success: false,
                 message: 'The username is already in use',
-                error: 'USERNAME_EXISTS'
+                error: 'USERNAME_EXISTS',
+                statusCode: 409
             });
         }
 
@@ -179,7 +185,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
                 name: newUser.name,
                 language: newUser.language,
                 currency: newUser.currency
-            }
+            },
+            statusCode: 201
         });
 
     } catch (error) {
@@ -187,7 +194,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -204,7 +212,8 @@ export const login = async (req: LoginRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'The email/username and password are required',
-                error: 'MISSING_FIELDS'
+                error: 'MISSING_FIELDS',
+                statusCode: 400
             });
         }
 
@@ -213,7 +222,8 @@ export const login = async (req: LoginRequest, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid data format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
         }
 
@@ -230,7 +240,8 @@ export const login = async (req: LoginRequest, res: Response) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials',
-                error: 'INVALID_CREDENTIALS'
+                error: 'INVALID_CREDENTIALS',
+                statusCode: 401
             });
         }
 
@@ -277,7 +288,8 @@ export const login = async (req: LoginRequest, res: Response) => {
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -289,7 +301,8 @@ export const logout = async (_: Request, res: Response) => {
     res.clearCookie('token');
     return res.status(200).json({
         success: true,
-        message: 'Logout successful'
+        message: 'Logout successful',
+        statusCode: 200
     });
-}; 
+};
 

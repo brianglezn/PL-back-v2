@@ -21,7 +21,8 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -42,14 +43,16 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
         // Return success message
         res.status(200).json({
             success: true,
-            data: accounts
+            data: accounts,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting accounts:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -67,7 +70,8 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -94,14 +98,16 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
         // Return success message
         res.status(200).json({
             success: true,
-            data: accounts
+            data: accounts,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting accounts by year:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -125,7 +131,8 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(400).json({
                 success: false,
                 message: 'Missing required fields',
-                error: 'VALIDATION_ERROR'
+                error: 'VALIDATION_ERROR',
+                statusCode: 400
             });
             return;
         }
@@ -148,7 +155,8 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(400).json({
                 success: false,
                 message: 'Invalid date format',
-                error: 'INVALID_DATE_FORMAT'
+                error: 'INVALID_DATE_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -167,7 +175,8 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -263,7 +272,8 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(400).json({
                 success: false,
                 message: 'Invalid account ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -279,7 +289,8 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             res.status(404).json({
                 success: false,
                 message: 'Account not found or does not belong to the user',
-                error: 'ACCOUNT_NOT_FOUND'
+                error: 'ACCOUNT_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -287,14 +298,16 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Account deleted successfully'
+            message: 'Account deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting account:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };

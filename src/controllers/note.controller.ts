@@ -20,7 +20,8 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -34,14 +35,16 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
         res.status(200).json({
             success: true,
             message: 'Notes retrieved successfully',
-            data: decryptedNotes
+            data: decryptedNotes,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting notes:', error);
         res.status(500).json({
             success: false,
             message: 'Error retrieving notes',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -133,7 +136,8 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(400).json({
                 success: false,
                 message: 'Invalid ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -159,7 +163,8 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(404).json({
                 success: false,
                 message: 'Note not found or does not belong to the user',
-                error: 'NOTE_NOT_FOUND'
+                error: 'NOTE_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -169,14 +174,16 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
         res.status(200).json({
             success: true,
             message: 'Note updated successfully',
-            data: result.value
+            data: result.value,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -194,7 +201,8 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(400).json({
                 success: false,
                 message: 'Invalid ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -210,7 +218,8 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
             res.status(404).json({
                 success: false,
                 message: 'Note not found or does not belong to the user',
-                error: 'NOTE_NOT_FOUND'
+                error: 'NOTE_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -218,14 +227,16 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Note deleted successfully'
+            message: 'Note deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };

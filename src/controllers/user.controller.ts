@@ -92,7 +92,8 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -105,7 +106,8 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -156,7 +158,8 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
                 res.status(500).json({
                     success: false,
                     message: 'Error uploading profile image',
-                    error: 'IMAGE_UPLOAD_ERROR'
+                    error: 'IMAGE_UPLOAD_ERROR',
+                    statusCode: 500 
                 });
                 return;
             }
@@ -173,7 +176,8 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -183,7 +187,8 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             res.status(400).json({
                 success: false,
                 message: 'No changes were made',
-                error: 'NO_CHANGES'
+                error: 'NO_CHANGES',
+                statusCode: 400
             });
             return;
         }
@@ -191,14 +196,16 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Profile updated successfully'
+            message: 'Profile updated successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating user profile:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -216,7 +223,8 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -227,7 +235,8 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Password must be at least 8 characters long and contain uppercase, lowercase, number and special character',
-                error: 'INVALID_PASSWORD'
+                error: 'INVALID_PASSWORD',
+                statusCode: 400
             });
             return;
         }
@@ -240,7 +249,8 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -251,7 +261,8 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             res.status(400).json({
                 success: false,
                 message: 'Current password is incorrect',
-                error: 'INVALID_PASSWORD'
+                error: 'INVALID_PASSWORD',
+                statusCode: 400
             });
             return;
         }
@@ -298,14 +309,16 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Password changed successfully'
+            message: 'Password changed successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error changing password:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -322,7 +335,8 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -334,7 +348,8 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -360,14 +375,16 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Profile image deleted successfully'
+            message: 'Profile image deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting profile image:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -384,7 +401,8 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -396,7 +414,8 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -427,7 +446,8 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -438,14 +458,16 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'User account deleted successfully'
+            message: 'User account deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting user account:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -463,7 +485,8 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -473,7 +496,8 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             res.status(400).json({
                 success: false,
                 message: 'Invalid accounts order format',
-                error: 'INVALID_FORMAT'
+                error: 'INVALID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -494,7 +518,8 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             res.status(404).json({
                 success: false,
                 message: 'User not found',
-                error: 'USER_NOT_FOUND'
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -502,14 +527,16 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Accounts order updated successfully'
+            message: 'Accounts order updated successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating accounts order:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'SERVER_ERROR'
+            error: 'SERVER_ERROR',
+            statusCode: 500
         });
     }
 };

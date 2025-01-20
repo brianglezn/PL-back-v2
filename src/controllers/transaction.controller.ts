@@ -21,7 +21,8 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -60,7 +61,8 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -78,7 +80,8 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -115,14 +118,16 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
         // Return transactions
         res.status(200).json({
             success: true,
-            data: transactions
+            data: transactions,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting transactions by year:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -140,7 +145,8 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             res.status(400).json({
                 success: false,
                 message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -179,14 +185,16 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
         // Return transactions
         res.status(200).json({
             success: true,
-            data: transactions
+            data: transactions,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error getting transactions by year and month:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -286,7 +294,8 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Invalid ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -314,7 +323,8 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'Transaction not found or does not belong to the user',
-                error: 'TRANSACTION_NOT_FOUND'
+                error: 'TRANSACTION_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -323,14 +333,16 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
         res.status(200).json({
             success: true,
             message: 'Transaction updated successfully',
-            data: result
+            data: result,
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error updating transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
@@ -348,7 +360,8 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(400).json({
                 success: false,
                 message: 'Invalid transaction ID format',
-                error: 'INVALID_ID_FORMAT'
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
             });
             return;
         }
@@ -364,7 +377,8 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             res.status(404).json({
                 success: false,
                 message: 'Transaction not found or does not belong to the user',
-                error: 'TRANSACTION_NOT_FOUND'
+                error: 'TRANSACTION_NOT_FOUND',
+                statusCode: 404
             });
             return;
         }
@@ -372,14 +386,16 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Transaction deleted successfully'
+            message: 'Transaction deleted successfully',
+            statusCode: 200
         });
     } catch (error) {
         console.error('❌ Error deleting transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: 'DATABASE_ERROR'
+            error: 'DATABASE_ERROR',
+            statusCode: 500
         });
     }
 };
