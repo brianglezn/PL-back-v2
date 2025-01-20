@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { IAccount } from '../types/models/IAccount';
-import { getCurrentUTCDate } from '../utils/dateUtils';
+import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
 
 // MongoDB accounts collection
 const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
@@ -142,6 +142,16 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
         };
+
+        // Validate date format
+        if (!DATE_REGEX.test(newAccount.createdAt) || !DATE_REGEX.test(newAccount.updatedAt)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid date format',
+                error: 'INVALID_DATE_FORMAT'
+            });
+            return;
+        }
 
         // Insert new account into the database
         const result = await accountsCollection.insertOne(newAccount);
