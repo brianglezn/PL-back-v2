@@ -123,6 +123,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             dateFormat: 'MM/DD/YYYY',
             timeFormat: '12h',
             accountsOrder: [],
+            lastLogin: getCurrentUTCDate(),
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
         };
@@ -224,8 +225,8 @@ export const login = async (req: LoginRequest, res: Response) => {
             ]
         });
 
-        // Check if user exists
-        if (!user) {
+        // Check if user exists and verify password
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials',
@@ -233,66 +234,12 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Verify if the account is active
-        if (user.status === 'inactive') {
-            return res.status(403).json({
-                success: false,
-                message: 'Account deactivated',
-                error: 'ACCOUNT_INACTIVE'
-            });
-        }
-
-        // Verify if the account is blocked
-        if (user.loginAttempts >= 5) {
-            const lockoutTime = 15 * 60 * 1000; // 15 minutes
-            const lastAttemptTime = user.lastLoginAttempt || 0;
-
-            if (Date.now() - lastAttemptTime < lockoutTime) {
-                return res.status(429).json({
-                    success: false,
-                    message: 'Account blocked temporarily. Try again later',
-                    error: 'ACCOUNT_LOCKED',
-                    remainingTime: lockoutTime - (Date.now() - lastAttemptTime)
-                });
-            } else {
-                // Reset attempts if the lockout time has passed
-                await usersCollection.updateOne(
-                    { _id: user._id },
-                    { $set: { loginAttempts: 0, lastLoginAttempt: null } }
-                );
-            }
-        }
-
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password);
-
-        // Check if password is valid
-        if (!isValidPassword) {
-            // Increment attempts
-            await usersCollection.updateOne(
-                { _id: user._id },
-                {
-                    $inc: { loginAttempts: 1 },
-                    $set: { lastLoginAttempt: Date.now() }
-                }
-            );
-
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials',
-                error: 'INVALID_CREDENTIALS',
-                remainingAttempts: 5 - ((user.loginAttempts || 0) + 1)
-            });
-        }
-
-        // Reset attempts after successful login
+        // Update last login
         await usersCollection.updateOne(
             { _id: user._id },
             {
                 $set: {
-                    loginAttempts: 0,
-                    lastLoginAttempt: null,
-                    lastLogin: new Date()
+                    lastLogin: getCurrentUTCDate()
                 }
             }
         );
@@ -345,3 +292,4 @@ export const logout = async (_: Request, res: Response) => {
         message: 'Logout successful'
     });
 }; 
+

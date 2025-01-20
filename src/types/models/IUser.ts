@@ -16,6 +16,7 @@ export interface IUser {
     currency: Currency;
     dateFormat: DateFormat;
     timeFormat: TimeFormat;
+    lastLogin: string;
     createdAt: string;
     updatedAt: string;
 }
