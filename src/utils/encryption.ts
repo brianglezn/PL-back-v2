@@ -33,19 +33,13 @@ const getEncryptionKey = (): Buffer => {
 // Encrypts a given plain text string
 export const encryptText = (text: string): string => {
     try {
-        // Verify if the text is already encrypted in the old format
-        try {
-            decryptText(text);
-            return text; // If it can be decrypted, it is already in the correct format
-        } catch {
-            // If it cannot be decrypted, proceed with the new encryption
-            const iv = crypto.randomBytes(IV_LENGTH);
-            const key = getEncryptionKey();
-            const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-            let encrypted = cipher.update(text);
-            encrypted = Buffer.concat([encrypted, cipher.final()]);
-            return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
-        }
+        // Generate new IV and encrypt
+        const iv = crypto.randomBytes(IV_LENGTH);
+        const key = getEncryptionKey();
+        const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+        let encrypted = cipher.update(text);
+        encrypted = Buffer.concat([encrypted, cipher.final()]);
+        return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
     } catch (error) {
         console.error('❌ Error encrypting text:', error);
         throw new Error('Encryption failed');
