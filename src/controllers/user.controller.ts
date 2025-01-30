@@ -86,7 +86,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
 export const updateUserProfile = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
-        const { name, surname, language, currency, dateFormat, timeFormat, theme } = req.body;
+        const { name, surname, language, currency, dateFormat, timeFormat } = req.body;
 
         // Validate user ID format
         if (!ObjectId.isValid(userId)) {
@@ -121,7 +121,6 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             currency,
             dateFormat,
             timeFormat,
-            theme,
             updatedAt: getCurrentUTCDate()
         };
 
@@ -207,6 +206,53 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             success: false,
             message: 'Internal server error',
             error: 'DATABASE_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Update the authenticated user's theme.
+ */
+export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        const { theme } = req.body;
+
+        if (!theme || !['light', 'dark'].includes(theme)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid theme value',
+                error: 'INVALID_THEME',
+                statusCode: 400
+            });
+            return;
+        }
+
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: {
+                    theme,
+                    updatedAt: getCurrentUTCDate()
+                }
+            }
+        );
+
+        const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+        res.status(200).json({
+            success: true,
+            data: updatedUser,
+            message: 'Theme updated successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error updating theme:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
             statusCode: 500
         });
     }
