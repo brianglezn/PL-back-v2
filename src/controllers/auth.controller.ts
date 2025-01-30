@@ -36,6 +36,7 @@ function setCookie(res: Response, token: string) {
         secure: true,
         sameSite: 'none' as const,
         maxAge: 24 * 60 * 60 * 1000,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         path: '/',
         domain: undefined
     };
