@@ -7,7 +7,8 @@ import {
     changePassword,
     deleteProfileImage,
     deleteUserAccount,
-    updateAccountsOrder
+    updateAccountsOrder,
+    updateUserTheme
 } from '../controllers/user.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
@@ -36,5 +37,6 @@ router.post('/password', authMiddleware, wrapHandler(changePassword));
 router.delete('/profile-image', authMiddleware, wrapHandler(deleteProfileImage));
 router.delete('/account', authMiddleware, wrapHandler(deleteUserAccount));
 router.post('/accounts-order', authMiddleware, wrapHandler(updateAccountsOrder));
+router.post('/theme', authMiddleware, wrapHandler(updateUserTheme));
 
 export default router;
