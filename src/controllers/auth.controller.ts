@@ -130,6 +130,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             dateFormat: 'MM/DD/YYYY',
             timeFormat: '12h',
             accountsOrder: [],
+            theme: 'light',
             lastLogin: getCurrentUTCDate(),
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()

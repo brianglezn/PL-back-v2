@@ -65,6 +65,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 currency: user.currency,
                 dateFormat: user.dateFormat,
                 timeFormat: user.timeFormat,
+                theme: user.theme,
             },
             statusCode: 200
         });
@@ -85,7 +86,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
 export const updateUserProfile = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
-        const { name, surname, language, currency, dateFormat, timeFormat } = req.body;
+        const { name, surname, language, currency, dateFormat, timeFormat, theme } = req.body;
 
         // Validate user ID format
         if (!ObjectId.isValid(userId)) {
@@ -120,6 +121,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             currency,
             dateFormat,
             timeFormat,
+            theme,
             updatedAt: getCurrentUTCDate()
         };
 
