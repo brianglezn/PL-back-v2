@@ -12,6 +12,7 @@ import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
+import { backupService } from './services/backup.service';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -50,6 +51,23 @@ app.use('/api/notes', noteRoutes);
 // Health check endpoint
 app.get('/health', (_, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Iniciar el servicio de backups programados
+backupService.startScheduledBackups();
+
+// Endpoint para backups manuales
+app.post('/api/backup', async (req, res) => {
+    try {
+        const result = await backupService.executeManualBackup();
+        res.status(result.success ? 200 : 500).json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: (error as Error).message
+        });
+    }
 });
 
 // Initialize server and database connection
