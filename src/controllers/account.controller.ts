@@ -16,7 +16,6 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -27,20 +26,17 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Fetch accounts from the database
-        const accounts = await accountsCollection.aggregate([
-            { $match: { user_id: new ObjectId(userId) } },
-            {
-                $project: {
-                    _id: 1,
-                    accountName: 1,
-                    records: 1,
-                    configuration: 1
-                }
-            }
-        ]).toArray();
+        const accounts = await accountsCollection.find({
+            user_id: new ObjectId(userId)
+        }).project({
+            _id: 1,
+            accountName: 1,
+            records: 1,
+            configuration: 1,
+            createdAt: 1,
+            updatedAt: 1
+        }).toArray();
 
-        // Return success message
         res.status(200).json({
             success: true,
             data: accounts,
@@ -65,7 +61,6 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
         const { userId } = req.user;
         const { year } = req.params;
 
-        // Validate user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -76,26 +71,27 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Fetch accounts from the database
         const accounts = await accountsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
                 $project: {
                     _id: 1,
                     accountName: 1,
+                    configuration: 1,
                     records: {
-                        $filter: {
-                            input: '$records',
-                            as: 'record',
-                            cond: { $eq: ['$$record.year', parseInt(year)] }
-                        }
-                    },
-                    configuration: 1
+                        $ifNull: [
+                            { $getField: { field: year, input: "$records" } },
+                            {
+                                jan: 0, feb: 0, mar: 0, apr: 0,
+                                may: 0, jun: 0, jul: 0, aug: 0,
+                                sep: 0, oct: 0, nov: 0, dec: 0
+                            }
+                        ]
+                    }
                 }
             }
         ]).toArray();
 
-        // Return success message
         res.status(200).json({
             success: true,
             data: accounts,
@@ -120,13 +116,6 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         const { userId } = req.user;
         const { accountName, configuration } = req.body;
 
-        const currentYear = new Date().getFullYear();
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const records = months.map(month => ({
-            year: currentYear,
-            month,
-            value: 0
-        }));
         if (!accountName || !configuration) {
             res.status(400).json({
                 success: false,
@@ -137,11 +126,22 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Create new account
+        const currentYear = new Date().getFullYear();
+        const initialYearRecord = {
+            jan: 0, feb: 0, mar: 0, apr: 0,
+            may: 0, jun: 0, jul: 0, aug: 0,
+            sep: 0, oct: 0, nov: 0, dec: 0
+        };
+
+        // Solo crear registro para el año actual
+        const records: Record<string, typeof initialYearRecord> = {
+            [currentYear.toString()]: { ...initialYearRecord }
+        };
+
         const newAccount = {
             user_id: new ObjectId(userId),
             accountName,
-            records: records || [],
+            records,
             configuration: {
                 ...configuration,
                 isActive: configuration.isActive ?? true
@@ -161,14 +161,16 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Insert new account into the database
         const result = await accountsCollection.insertOne(newAccount);
 
-        // Return success message
+        if (!result.acknowledged) {
+            throw new Error('Error creating account');
+        }
+
         res.status(201).json({
             success: true,
-            message: 'Account created successfully',
-            data: { ...newAccount, _id: result.insertedId }
+            data: { ...newAccount, _id: result.insertedId },
+            statusCode: 201
         });
     } catch (error) {
         console.error('❌ Error creating account:', error);
