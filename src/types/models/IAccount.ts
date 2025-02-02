@@ -11,6 +11,27 @@ export interface IAccount {
 }
 
 export interface IYearRecord {
+    jan: string;
+    feb: string;
+    mar: string;
+    apr: string;
+    may: string;
+    jun: string;
+    jul: string;
+    aug: string;
+    sep: string;
+    oct: string;
+    nov: string;
+    dec: string;
+}
+
+export interface IAccountConfiguration {
+    backgroundColor: string;
+    color: string;
+    isActive: boolean;
+}
+
+export interface YearRecord {
     jan: number;
     feb: number;
     mar: number;
@@ -23,10 +44,4 @@ export interface IYearRecord {
     oct: number;
     nov: number;
     dec: number;
-}
-
-export interface IAccountConfiguration {
-    backgroundColor: string;
-    color: string;
-    isActive: boolean;
 }

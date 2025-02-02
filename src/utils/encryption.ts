@@ -68,3 +68,12 @@ export const decryptText = (text: string): string => {
         return text; // In case of error, return the original text
     }
 };
+
+export const encryptNumber = (num: number): string => {
+    return encryptText(num.toString());
+};
+
+export const decryptNumber = (encrypted: string): number => {
+    const decrypted = decryptText(encrypted);
+    return parseFloat(decrypted) || 0;
+};
