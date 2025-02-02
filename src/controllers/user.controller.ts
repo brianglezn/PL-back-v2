@@ -7,7 +7,7 @@ import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import { cloudinary } from '../config/cloudinary';
 import type { IUser } from '../types/models/IUser';
-import { getAccountDeletionEmailTemplate } from '../utils/emailTemplates';
+import { getAccountDeletionEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
 // Extend the AuthRequest interface for file handling with Multer
@@ -17,6 +17,9 @@ interface MulterRequest extends AuthRequest {
 
 // MongoDB users collection
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
+const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
+const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
+const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
  * Fetch the authenticated user's data.
@@ -160,7 +163,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
                     success: false,
                     message: 'Error uploading profile image',
                     error: 'IMAGE_UPLOAD_ERROR',
-                    statusCode: 500 
+                    statusCode: 500
                 });
                 return;
             }
@@ -263,36 +266,31 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
  */
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { currentPassword, newPassword } = req.body;
         const { userId } = req.user;
+        const { currentPassword, newPassword, language } = req.body;
 
-        // Validate user ID format
-        if (!ObjectId.isValid(userId)) {
+        if (!currentPassword || !newPassword) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid user ID format',
-                error: 'INVALID_FORMAT',
+                message: 'Current and new password are required',
+                error: 'MISSING_FIELDS',
                 statusCode: 400
             });
             return;
         }
 
-        // Validate password format
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             res.status(400).json({
                 success: false,
                 message: 'Password must be at least 8 characters long and contain uppercase, lowercase, number and special character',
-                error: 'INVALID_PASSWORD',
+                error: 'PASSWORD_TOO_WEAK',
                 statusCode: 400
             });
             return;
         }
 
-        // Fetch user data from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
-
-        // Check if user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -303,7 +301,6 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Check if current password is correct
         const passwordMatch = await bcrypt.compare(currentPassword, user.password);
         if (!passwordMatch) {
             res.status(400).json({
@@ -315,16 +312,18 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Hash the new password
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update user data in the database
         await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
-            { $set: { password: hashedNewPassword, updatedAt: new Date() } }
+            { 
+                $set: { 
+                    password: hashedNewPassword,
+                    updatedAt: getCurrentUTCDate()
+                } 
+            }
         );
 
-        // Send password changed email
         const transporter = nodemailer.createTransport({
             host: 'smtp.hostinger.com',
             port: 465,
@@ -335,26 +334,13 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             }
         });
 
-        transporter.sendMail({
+        await transporter.sendMail({
             from: '"Profit-Lost" <no-reply@profit-lost.com>',
             to: user.email,
-            subject: 'Password Changed Successfully',
-            html: `
-                <div style="font-family: 'Arial', sans-serif; color: #212529;">
-                    <h2>Password Changed</h2>
-                    <p>Your password has been successfully changed.</p>
-                    <p>If you did not make this change, please contact support immediately.</p>
-                </div>
-            `
-        }, (error, info) => {
-            if (error) {
-                console.error('Error sending email:', error);
-            } else {
-                console.log('Confirmation email sent:', info.messageId);
-            }
+            subject: user.language === 'esES' ? 'Contraseña actualizada con éxito' : 'Password Changed Successfully',
+            html: getPasswordChangeEmailTemplate(user.name, user.language)
         });
 
-        // Return success message
         res.status(200).json({
             success: true,
             message: 'Password changed successfully',
@@ -482,31 +468,43 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
         await transporter.sendMail({
             from: '"Profit-Lost" <no-reply@profit-lost.com>',
             to: user.email,
-            subject: "We're sad to see you go - Profit-Lost",
-            html: getAccountDeletionEmailTemplate(user.name)
+            subject: user.language === 'esES' ? 'Cuenta eliminada con éxito' : 'Account Successfully Deleted',
+            html: getAccountDeletionEmailTemplate(user.name, user.language)
         });
 
-        // Delete the user
-        const result = await usersCollection.deleteOne({ _id: new ObjectId(userId) });
-
-        // Check if user exists
-        if (result.deletedCount === 0) {
-            res.status(404).json({
-                success: false,
-                message: 'User not found',
-                error: 'USER_NOT_FOUND',
-                statusCode: 404
-            });
-            return;
+        // Eliminar imagen de perfil de Cloudinary si existe
+        if (user.profileImagePublicId) {
+            try {
+                await cloudinary.uploader.destroy(user.profileImagePublicId);
+            } catch (cloudinaryError) {
+                console.error('❌ Error deleting image from cloudinary:', cloudinaryError);
+            }
         }
 
-        // Clear the token cookie
+        // Eliminar todos los datos del usuario de todas las colecciones
+        const userObjectId = new ObjectId(userId);
+
+        // Usar Promise.all para ejecutar todas las operaciones de eliminación en paralelo
+        await Promise.all([
+            // Eliminar cuentas del usuario
+            accountsCollection.deleteMany({ user_id: userObjectId }),
+            
+            // Eliminar categorías del usuario
+            categoriesCollection.deleteMany({ user_id: userObjectId }),
+            
+            // Eliminar transacciones del usuario
+            transactionsCollection.deleteMany({ user_id: userObjectId }),
+                        
+            // Finalmente, eliminar el usuario
+            usersCollection.deleteOne({ _id: userObjectId })
+        ]);
+
+        // Limpiar la cookie del token
         res.clearCookie('token');
 
-        // Return success message
         res.status(200).json({
             success: true,
-            message: 'User account deleted successfully',
+            message: 'User account and all related data deleted successfully',
             statusCode: 200
         });
     } catch (error) {

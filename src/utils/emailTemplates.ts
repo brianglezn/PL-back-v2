@@ -70,37 +70,122 @@ export const getWelcomeEmailTemplate = (name: string, dashboardUrl: string) => e
     </p>
 `);
 
-export const getAccountDeletionEmailTemplate = (name: string) => emailLayout(`
-    <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">💔 We're sad to see you go, ${name} 💔</h1>
+export const getAccountDeletionEmailTemplate = (name: string, language: string = 'enUS') => {
+    if (language === 'esES') {
+        return emailLayout(`
+            <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">👋 Cuenta eliminada con éxito 👋</h1>
+            
+            <p style="margin-bottom:20px;line-height:1.6">Hola ${name},</p>
+            
+            <p style="margin-bottom:20px;line-height:1.6">
+                Confirmamos que tu cuenta de Profit-Lost ha sido eliminada correctamente. Todos tus datos han sido borrados de manera permanente.
+            </p>
+
+            <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+                <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">¿Qué significa esto?</h2>
+                <ul style="margin-bottom:0;padding-left:20px;line-height:1.6">
+                    <li style="margin-bottom:8px">Tu información personal ha sido eliminada.</li>
+                    <li style="margin-bottom:8px">Tus datos financieros han sido borrados permanentemente.</li>
+                    <li style="margin-bottom:8px">Ya no tendrás acceso a tu cuenta.</li>
+                </ul>
+            </div>
+
+            <p style="margin-bottom:24px;line-height:1.6">
+                Lamentamos verte partir. Si deseas volver a usar Profit-Lost en el futuro, siempre serás bienvenido/a creando una nueva cuenta.
+            </p>
+        `);
+    }
+
+    return emailLayout(`
+        <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">👋 Account Successfully Deleted 👋</h1>
+        
+        <p style="margin-bottom:20px;line-height:1.6">Hello ${name},</p>
+        
+        <p style="margin-bottom:20px;line-height:1.6">
+            We confirm that your Profit-Lost account has been successfully deleted. All your data has been permanently erased.
+        </p>
+
+        <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+            <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">What does this mean?</h2>
+            <ul style="margin-bottom:0;padding-left:20px;line-height:1.6">
+                <li style="margin-bottom:8px">Your personal information has been removed.</li>
+                <li style="margin-bottom:8px">Your financial data has been permanently deleted.</li>
+                <li style="margin-bottom:8px">You will no longer have access to your account.</li>
+            </ul>
+        </div>
+
+        <p style="margin-bottom:24px;line-height:1.6">
+            We're sorry to see you go. If you wish to use Profit-Lost again in the future, you'll always be welcome to create a new account.
+        </p>
+    `);
+};
+
+export const getPasswordChangeEmailTemplate = (name: string, language: string = 'enUS') => {
+    if (language === 'esES') {
+        return emailLayout(`
+            <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔐 Contraseña actualizada con éxito 🔐</h1>
+        
+        <p style="margin-bottom:20px;line-height:1.6">Hola ${name},</p>
+        
+        <p style="margin-bottom:20px;line-height:1.6">
+            Te confirmamos que tu contraseña ha sido actualizada correctamente en tu cuenta de Profit-Lost.
+        </p>
+
+        <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+            <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Información importante</h2>
+            <p style="margin-bottom:16px;line-height:1.6">
+                Si no realizaste este cambio, por favor contacta inmediatamente con nuestro equipo de soporte en 
+                <a href="mailto:brian@profit-lost.com" style="color:#fe6f14;text-decoration:none">brian@profit-lost.com</a>.
+            </p>
+        </div>
+
+        <div style="margin-bottom:24px">
+            <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Recomendaciones de seguridad</h2>
+            <ul style="margin-bottom:0;padding-left:20px;line-height:1.6">
+                <li style="margin-bottom:8px">Nunca compartas tu contraseña con nadie.</li>
+                <li style="margin-bottom:8px">Usa contraseñas únicas para cada servicio.</li>
+                <li style="margin-bottom:8px">Activa la autenticación de dos factores cuando esté disponible.</li>
+                <li style="margin-bottom:8px">Revisa regularmente la actividad de tu cuenta.</li>
+            </ul>
+        </div>
+
+        <p style="margin-bottom:24px;line-height:1.6">
+            Gracias por confiar en Profit-Lost para gestionar tus finanzas de manera segura.
+        </p>
+        `);
+    }
     
-    <p style="margin-bottom:20px;line-height:1.6">Hey ${name},</p>
-    
-    <p style="margin-bottom:20px;line-height:1.6">
-        I'm Brian, CEO of Profit-Lost. I just wanted to take a moment to say thank you for trying out our platform 
-        and being part of our community, even if it was for a short while.
-    </p>
+    if (language === 'enUS') {
+        return emailLayout(`
+                <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔐 Password Updated Successfully 🔐</h1>
+            
+            <p style="margin-bottom:20px;line-height:1.6">Hello ${name},</p>
+            
+            <p style="margin-bottom:20px;line-height:1.6">
+                We confirm that your password has been successfully updated on your Profit-Lost account.
+            </p>
 
-    <p style="margin-bottom:24px;line-height:1.6">
-        We understand that sometimes it's just not the right time or fit—and that's okay!
-    </p>
+            <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+                <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Important Information</h2>
+                <p style="margin-bottom:16px;line-height:1.6">
+                    If you did not make this change, please contact our support team immediately at 
+                    <a href="mailto:brian@profit-lost.com" style="color:#fe6f14;text-decoration:none">brian@profit-lost.com</a>.
+                </p>
+            </div>
 
-    <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
-        <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Before you go</h2>
-        <p style="margin-bottom:16px;line-height:1.6">
-            If there's anything we could have done better, we'd love to hear from you. Your feedback helps us improve 
-            and create a better experience for everyone. Feel free to reply to this email or contact us directly at 
-            <a href="mailto:brian@profit-lost.com" style="color:#fe6f14;text-decoration:none">brian@profit-lost.com</a>.
-        </p>
-    </div>
+            <div style="margin-bottom:24px">
+                <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Security Recommendations</h2>
+                <ul style="margin-bottom:0;padding-left:20px;line-height:1.6">
+                    <li style="margin-bottom:8px">Never share your password with anyone.</li>
+                    <li style="margin-bottom:8px">Use unique passwords for each service.</li>
+                    <li style="margin-bottom:8px">Enable two-factor authentication when available.</li>
+                    <li style="margin-bottom:8px">Regularly review your account activity.</li>
+                </ul>
+            </div>
 
-    <div style="margin-bottom:24px">
-        <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">We're always here for you</h2>
-        <p style="margin-bottom:16px;line-height:1.6">
-            If you ever decide to come back, we'll be ready to help you take control of your finances again. 
-            It's easy to pick up right where you left off.
-        </p>
-        <p style="margin-bottom:16px;line-height:1.6">
-            Until then, we wish you the very best in reaching your financial goals!
-        </p>
-    </div>
-`); 
+            <p style="margin-bottom:24px;line-height:1.6">
+                Thank you for trusting Profit-Lost to manage your finances securely.
+            </p>
+        `);
+    }
+}; 
