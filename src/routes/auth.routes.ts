@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response, RequestHandler } from 'express';
-import { login, logout, register } from '../controllers/auth.controller';
+import { login, logout, register, forgotPassword, verifyResetToken, resetPassword } from '../controllers/auth.controller';
 
 const router = Router();
 
@@ -40,9 +40,48 @@ const logoutHandler: RequestHandler = async (req, res, next) => {
     }
 };
 
+/**
+ * Wrapper for the forgot password controller to handle errors gracefully.
+ * Ensures the request is passed to the `forgotPassword` controller and any errors are caught.
+ */
+const forgotPasswordHandler: RequestHandler = async (req, res, next) => {
+    try {
+        await forgotPassword(req as Request, res as Response);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Wrapper for the verify reset token controller to handle errors gracefully.
+ * Ensures the request is passed to the `verifyResetToken` controller and any errors are caught.
+ */
+const verifyResetTokenHandler: RequestHandler = async (req, res, next) => {
+    try {
+        await verifyResetToken(req as Request, res as Response);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Wrapper for the reset password controller to handle errors gracefully.
+ * Ensures the request is passed to the `resetPassword` controller and any errors are caught.
+ */
+const resetPasswordHandler: RequestHandler = async (req, res, next) => {
+    try {
+        await resetPassword(req as Request, res as Response);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Routes
 router.post('/register', registerHandler);
 router.post('/login', loginHandler);
 router.post('/logout', logoutHandler);
+router.post('/forgot-password', forgotPasswordHandler);
+router.post('/verify-reset-token', verifyResetTokenHandler);
+router.post('/reset-password', resetPasswordHandler);
 
 export default router;

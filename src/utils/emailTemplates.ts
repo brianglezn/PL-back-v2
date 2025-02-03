@@ -135,7 +135,7 @@ export const getPasswordChangeEmailTemplate = (name: string, language: string = 
             <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Información importante</h2>
             <p style="margin-bottom:16px;line-height:1.6">
                 Si no realizaste este cambio, por favor contacta inmediatamente con nuestro equipo de soporte en 
-                <a href="mailto:brian@profit-lost.com" style="color:#fe6f14;text-decoration:none">brian@profit-lost.com</a>.
+                <a href="mailto:support@profit-lost.com" style="color:#fe6f14;text-decoration:none">support@profit-lost.com</a>.
             </p>
         </div>
 
@@ -169,7 +169,7 @@ export const getPasswordChangeEmailTemplate = (name: string, language: string = 
                 <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Important Information</h2>
                 <p style="margin-bottom:16px;line-height:1.6">
                     If you did not make this change, please contact our support team immediately at 
-                    <a href="mailto:brian@profit-lost.com" style="color:#fe6f14;text-decoration:none">brian@profit-lost.com</a>.
+                    <a href="mailto:support@profit-lost.com" style="color:#fe6f14;text-decoration:none">support@profit-lost.com</a>.
                 </p>
             </div>
 
@@ -188,4 +188,58 @@ export const getPasswordChangeEmailTemplate = (name: string, language: string = 
             </p>
         `);
     }
+};
+
+export const getPasswordResetEmailTemplate = (name: string, token: string, language: string = 'enUS') => {
+    if (language === 'esES') {
+        return emailLayout(`
+            <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔑 Recuperación de contraseña 🔑</h1>
+            
+            <p style="margin-bottom:20px;line-height:1.6">Hola ${name},</p>
+            
+            <p style="margin-bottom:20px;line-height:1.6">
+                Hemos recibido una solicitud para restablecer la contraseña de tu cuenta Profit-Lost.
+            </p>
+
+            <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+                <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Tu código de recuperación:</h2>
+                <p style="font-size:24px;font-weight:bold;text-align:center;letter-spacing:4px;margin:20px 0">
+                    ${token}
+                </p>
+                <p style="margin-top:16px;font-size:14px;color:#6c757d">
+                    Este código expirará en 15 minutos.
+                </p>
+            </div>
+
+            <p style="margin-bottom:16px;line-height:1.6">
+                Si no solicitaste este cambio, por favor ignora este email o contacta con soporte en
+                <a href="mailto:support@profit-lost.com" style="color:#fe6f14;text-decoration:none">support@profit-lost.com</a>.
+            </p>
+        `);
+    }
+
+    return emailLayout(`
+        <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔑 Password Recovery 🔑</h1>
+        
+        <p style="margin-bottom:20px;line-height:1.6">Hello ${name},</p>
+        
+        <p style="margin-bottom:20px;line-height:1.6">
+            We received a request to reset the password for your Profit-Lost account.
+        </p>
+
+        <div style="background-color:#f8f9fa;border-radius:8px;padding:24px;margin-bottom:24px">
+            <h2 style="color:#fe6f14;margin-bottom:16px;font-size:20px">Your recovery code:</h2>
+            <p style="font-size:24px;font-weight:bold;text-align:center;letter-spacing:4px;margin:20px 0">
+                ${token}
+            </p>
+            <p style="margin-top:16px;font-size:14px;color:#6c757d">
+                This code will expire in 15 minutes.
+            </p>
+        </div>
+
+        <p style="margin-bottom:16px;line-height:1.6">
+            If you didn't request this change, please ignore this email or contact support at
+            <a href="mailto:support@profit-lost.com" style="color:#fe6f14;text-decoration:none">support@profit-lost.com</a>.
+        </p>
+    `);
 }; 

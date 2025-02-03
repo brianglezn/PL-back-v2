@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 
 import { client } from '../config/database';
 import { IUser } from '../types/models/IUser';
-import { getWelcomeEmailTemplate } from '../utils/emailTemplates';
+import { getWelcomeEmailTemplate, getPasswordResetEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
 // MongoDB users collection
@@ -71,12 +71,12 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate username format (only letters, numbers and hyphens)
-        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+        // Validate username format (only lowercase letters and numbers)
+        const usernameRegex = /^[a-z0-9]{3,20}$/;
         if (!usernameRegex.test(username)) {
             return res.status(400).json({
                 success: false,
-                message: 'The username must be between 3 and 20 characters and can only contain letters, numbers and hyphens',
+                message: 'Username must be between 3 and 20 characters and can only contain lowercase letters and numbers',
                 error: 'INVALID_FORMAT',
                 statusCode: 400
             });
@@ -306,5 +306,184 @@ export const logout = async (_: Request, res: Response) => {
         message: 'Logout successful',
         statusCode: 200
     });
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+                error: 'MISSING_FIELDS',
+                statusCode: 400
+            });
+        }
+
+        const user = await usersCollection.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Email not found',
+                error: 'EMAIL_NOT_FOUND',
+                statusCode: 404
+            });
+        }
+
+        // Generar token de 6 dígitos
+        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+        await usersCollection.updateOne(
+            { _id: user._id },
+            {
+                $set: {
+                    resetToken: resetToken,
+                    resetTokenExpiry: resetTokenExpiry.toISOString()
+                }
+            }
+        );
+
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.hostinger.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: 'no-reply@profit-lost.com',
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
+
+        await transporter.sendMail({
+            from: '"Profit-Lost" <no-reply@profit-lost.com>',
+            to: user.email,
+            subject: user.language === 'esES' ? 'Código de recuperación de contraseña' : 'Password Recovery Code',
+            html: getPasswordResetEmailTemplate(user.name, resetToken, user.language)
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Recovery code sent successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error in forgot password:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+export const verifyResetToken = async (req: Request, res: Response) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token is required',
+                error: 'MISSING_FIELDS',
+                statusCode: 400
+            });
+        }
+
+        const user = await usersCollection.findOne({ 
+            resetToken: token,
+            resetTokenExpiry: { $gt: getCurrentUTCDate() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired token',
+                error: 'INVALID_RESET_TOKEN',
+                statusCode: 400
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Token verified successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token and new password are required',
+                error: 'MISSING_FIELDS',
+                statusCode: 400
+            });
+        }
+
+        const user = await usersCollection.findOne({ 
+            resetToken: token,
+            resetTokenExpiry: { $gt: getCurrentUTCDate() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired token',
+                error: 'INVALID_RESET_TOKEN',
+                statusCode: 400
+            });
+        }
+
+        // Validar contraseña fuerte
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password is too weak',
+                error: 'PASSWORD_TOO_WEAK',
+                statusCode: 400
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await usersCollection.updateOne(
+            { _id: user._id },
+            { 
+                $set: { 
+                    password: hashedPassword,
+                    resetToken: null,
+                    resetTokenExpiry: null,
+                    updatedAt: getCurrentUTCDate()
+                } 
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
 };
 
