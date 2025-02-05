@@ -24,7 +24,16 @@ export const authMiddleware = (
     next: NextFunction
 ): void => {
     try {
-        const token = req.cookies.token;
+        // Try to get the token from the cookie first
+        let token = req.cookies.token;
+
+        // If there is no cookie, search in the Authorization header
+        if (!token) {
+            const authHeader = req.headers.authorization;
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
 
         if (!token) {
             res.status(401).json({
