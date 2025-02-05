@@ -592,7 +592,8 @@ export const googleAuth = async (req: Request, res: Response) => {
         res.status(200).json({
             success: true,
             message: 'Google authentication successful',
-            statusCode: 200
+            statusCode: 200,
+            token: jwtToken
         });
     } catch (error) {
         console.error('Google auth error:', error);
