@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
 
 import { client } from '../config/database';
 import { IUser } from '../types/models/IUser';
@@ -10,6 +11,8 @@ import { getCurrentUTCDate } from '../utils/dateUtils';
 
 // MongoDB users collection
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
+
+const oAuthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 interface RegisterRequest extends Request {
     body: {
@@ -299,13 +302,28 @@ export const login = async (req: LoginRequest, res: Response) => {
 /**
  * Logout the user.
  */
-export const logout = async (_: Request, res: Response) => {
-    res.clearCookie('token');
-    return res.status(200).json({
-        success: true,
-        message: 'Logout successful',
-        statusCode: 200
-    });
+export const logout = async (req: Request, res: Response) => {
+    try {
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Logout successful',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during logout',
+            error: 'LOGOUT_ERROR',
+            statusCode: 500
+        });
+    }
 };
 
 export const forgotPassword = async (req: Request, res: Response) => {
@@ -482,6 +500,106 @@ export const resetPassword = async (req: Request, res: Response) => {
             success: false,
             message: 'Server error',
             error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+export const googleAuth = async (req: Request, res: Response) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Google token not provided',
+                error: 'MISSING_FIELDS',
+                statusCode: 400
+            });
+        }
+
+        const ticket = await oAuthClient.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid token',
+                error: 'INVALID_GOOGLE_TOKEN',
+                statusCode: 400
+            });
+        }
+
+        const { email, name, given_name, family_name, picture, sub: googleId } = payload;
+
+        let user = await usersCollection.findOne({ email }) as IUser | null;
+
+        if (user) {
+            if (!user.googleId) {
+                await usersCollection.updateOne(
+                    { _id: user._id },
+                    { 
+                        $set: { 
+                            googleId,
+                            profileImage: picture || user.profileImage,
+                            updatedAt: getCurrentUTCDate()
+                        } 
+                    }
+                );
+            }
+        } else {
+            const username = email!.split('@')[0].toLowerCase();
+            const newUser: IUser = {
+                username,
+                email: email!.toLowerCase(),
+                name: given_name || name!.split(' ')[0],
+                surname: family_name || name!.split(' ').slice(1).join(' '),
+                googleId,
+                profileImage: picture,
+                language: 'enUS',
+                currency: 'USD',
+                dateFormat: 'MM/DD/YYYY',
+                timeFormat: '12h',
+                accountsOrder: [],
+                theme: 'light',
+                lastLogin: getCurrentUTCDate(),
+                createdAt: getCurrentUTCDate(),
+                updatedAt: getCurrentUTCDate()
+            };
+
+            const result = await usersCollection.insertOne(newUser);
+            user = {
+                ...newUser,
+                _id: result.insertedId
+            };
+        }
+
+        const jwtToken = jwt.sign(
+            {
+                userId: user._id,
+                email: user.email,
+                username: user.username
+            },
+            process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
+        );
+
+        setCookie(res, jwtToken);
+
+        res.status(200).json({
+            success: true,
+            message: 'Google authentication successful',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('Google auth error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error in Google authentication',
+            error: 'GOOGLE_AUTH_ERROR',
             statusCode: 500
         });
     }

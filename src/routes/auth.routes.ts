@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response, RequestHandler } from 'express';
-import { login, logout, register, forgotPassword, verifyResetToken, resetPassword } from '../controllers/auth.controller';
+import { login, logout, register, forgotPassword, verifyResetToken, resetPassword, googleAuth } from '../controllers/auth.controller';
 
 const router = Router();
 
@@ -76,6 +76,14 @@ const resetPasswordHandler: RequestHandler = async (req, res, next) => {
     }
 };
 
+const googleAuthHandler: RequestHandler = async (req, res, next) => {
+    try {
+        await googleAuth(req as Request, res as Response);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Routes
 router.post('/register', registerHandler);
 router.post('/login', loginHandler);
@@ -83,5 +91,6 @@ router.post('/logout', logoutHandler);
 router.post('/forgot-password', forgotPasswordHandler);
 router.post('/verify-reset-token', verifyResetTokenHandler);
 router.post('/reset-password', resetPasswordHandler);
+router.post('/google', googleAuthHandler);
 
 export default router;

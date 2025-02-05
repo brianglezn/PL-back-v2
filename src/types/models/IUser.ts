@@ -4,9 +4,10 @@ export interface IUser {
     _id?: ObjectId;
     username: string;
     email: string;
-    password: string;
+    password?: string;
     name: string;
     surname: string;
+    googleId?: string;
     resetToken?: string;
     resetTokenExpiry?: string;
     language: Language;
