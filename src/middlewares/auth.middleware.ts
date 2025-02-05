@@ -23,6 +23,8 @@ export const authMiddleware = (
     res: Response,
     next: NextFunction
 ): void => {
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     try {
         // Try to get the token from the cookie first
         let token = req.cookies.token;

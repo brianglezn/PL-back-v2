@@ -24,7 +24,11 @@ const PORT = process.env.PORT || 3000;
 // Enable Cross-Origin Resource Sharing (CORS) for specific origins
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = ['https://profit-lost.com', 'http://localhost:5173'];
+        const allowedOrigins = [
+            'https://profit-lost.com',
+            'https://www.profit-lost.com',
+            'http://localhost:5173'
+        ];
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -34,11 +38,18 @@ app.use(cors({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-    exposedHeaders: ['Set-Cookie']
+    exposedHeaders: ['Set-Cookie'],
+    maxAge: 86400
 }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
+
+// Middleware adicional para asegurar los headers CORS
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+});
 
 // API endpoints
 app.use('/api/auth', authRoutes);
