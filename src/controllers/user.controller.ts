@@ -64,12 +64,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 surname: user.surname,
                 profileImage: user.profileImage,
                 accountsOrder: user.accountsOrder,
-                language: user.language,
-                currency: user.currency,
-                dateFormat: user.dateFormat,
-                timeFormat: user.timeFormat,
-                theme: user.theme,
-                viewMode: user.viewMode
+                preferences: user.preferences
             },
             statusCode: 200
         });
@@ -121,11 +116,13 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
         const updateData: Partial<IUser> = {
             name,
             surname,
-            language,
-            currency,
-            dateFormat,
-            timeFormat,
-            viewMode,
+            preferences: {
+                ...user.preferences, 
+                language: language || user.preferences.language,
+                currency: currency || user.preferences.currency,
+                dateFormat: dateFormat || user.preferences.dateFormat,
+                timeFormat: timeFormat || user.preferences.timeFormat
+            },
             updatedAt: getCurrentUTCDate()
         };
 
@@ -238,11 +235,21 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             { _id: new ObjectId(userId) },
             {
                 $set: {
-                    theme,
+                    'preferences.theme': theme,
                     updatedAt: getCurrentUTCDate()
                 }
             }
         );
+
+        if (result.modifiedCount === 0) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found',
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
+            });
+            return;
+        }
 
         const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
@@ -271,11 +278,11 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
         const { userId } = req.user;
         const { viewMode } = req.body;
 
-        if (!ObjectId.isValid(userId)) {
+        if (!viewMode || !['yearToday', 'fullYear'].includes(viewMode)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid user ID format',
-                error: 'INVALID_ID_FORMAT',
+                message: 'Invalid view mode value',
+                error: 'INVALID_VIEW_MODE',
                 statusCode: 400
             });
             return;
@@ -285,7 +292,7 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             { _id: new ObjectId(userId) },
             {
                 $set: {
-                    viewMode,
+                    'preferences.viewMode': viewMode,
                     updatedAt: getCurrentUTCDate()
                 }
             }
@@ -301,8 +308,11 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
+        const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
         res.status(200).json({
             success: true,
+            data: updatedUser,
             message: 'View mode updated successfully',
             statusCode: 200
         });

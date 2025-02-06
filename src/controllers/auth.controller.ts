@@ -128,12 +128,15 @@ export const register = async (req: RegisterRequest, res: Response) => {
             password: hashedPassword,
             name,
             surname,
-            language: 'enUS',
-            currency: 'USD',
-            dateFormat: 'MM/DD/YYYY',
-            timeFormat: '12h',
+            preferences: {
+                language: 'enUS',
+                currency: 'USD',
+                dateFormat: 'MM/DD/YYYY',
+                timeFormat: '12h',
+                theme: 'light',
+                viewMode: 'fullYear'
+            },
             accountsOrder: [],
-            theme: 'light',
             lastLogin: getCurrentUTCDate(),
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
@@ -188,8 +191,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
                 username: newUser.username,
                 email: newUser.email,
                 name: newUser.name,
-                language: newUser.language,
-                currency: newUser.currency
+                preferences: newUser.preferences
             },
             statusCode: 201
         });
@@ -559,12 +561,15 @@ export const googleAuth = async (req: Request, res: Response) => {
                 surname: family_name || name!.split(' ').slice(1).join(' '),
                 googleId,
                 profileImage: picture,
-                language: 'enUS',
-                currency: 'USD',
-                dateFormat: 'MM/DD/YYYY',
-                timeFormat: '12h',
+                preferences: {
+                    language: 'enUS',
+                    currency: 'USD',
+                    dateFormat: 'MM/DD/YYYY',
+                    timeFormat: '12h',
+                    viewMode: 'fullYear',
+                    theme: 'light'
+                },
                 accountsOrder: [],
-                theme: 'light',
                 lastLogin: getCurrentUTCDate(),
                 createdAt: getCurrentUTCDate(),
                 updatedAt: getCurrentUTCDate()
