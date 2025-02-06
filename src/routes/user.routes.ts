@@ -8,7 +8,8 @@ import {
     deleteProfileImage,
     deleteUserAccount,
     updateAccountsOrder,
-    updateUserTheme
+    updateUserTheme,
+    updateUserViewMode
 } from '../controllers/user.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
@@ -33,10 +34,11 @@ const wrapHandler = (handler: (req: AuthRequest, res: Response) => Promise<void>
 // Routes
 router.get('/me', authMiddleware, wrapHandler(getUserData));
 router.post('/profile', authMiddleware, upload.single('profileImage'), wrapHandler(updateUserProfile));
+router.post('/theme', authMiddleware, wrapHandler(updateUserTheme));
+router.post('/view-mode', authMiddleware, wrapHandler(updateUserViewMode));
 router.post('/password', authMiddleware, wrapHandler(changePassword));
 router.delete('/profile-image', authMiddleware, wrapHandler(deleteProfileImage));
 router.delete('/account', authMiddleware, wrapHandler(deleteUserAccount));
 router.post('/accounts-order', authMiddleware, wrapHandler(updateAccountsOrder));
-router.post('/theme', authMiddleware, wrapHandler(updateUserTheme));
 
 export default router;

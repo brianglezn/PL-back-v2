@@ -69,6 +69,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 dateFormat: user.dateFormat,
                 timeFormat: user.timeFormat,
                 theme: user.theme,
+                viewMode: user.viewMode
             },
             statusCode: 200
         });
@@ -89,7 +90,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
 export const updateUserProfile = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
-        const { name, surname, language, currency, dateFormat, timeFormat } = req.body;
+        const { viewMode, name, surname, language, currency, dateFormat, timeFormat } = req.body;
 
         // Validate user ID format
         if (!ObjectId.isValid(userId)) {
@@ -124,6 +125,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             currency,
             dateFormat,
             timeFormat,
+            viewMode,
             updatedAt: getCurrentUTCDate()
         };
 
@@ -252,6 +254,60 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
         });
     } catch (error) {
         console.error('❌ Error updating theme:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Update the authenticated user's view mode.
+ */
+export const updateUserViewMode = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        const { viewMode } = req.body;
+
+        if (!ObjectId.isValid(userId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format',
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: {
+                    viewMode,
+                    updatedAt: getCurrentUTCDate()
+                }
+            }
+        );
+
+        if (result.modifiedCount === 0) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found',
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'View mode updated successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error updating view mode:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

@@ -21,6 +21,7 @@ export interface IUser {
     lastLogin: string;
     createdAt: string;
     updatedAt: string;
+    viewMode?: 'yearToday' | 'fullYear';
 }
 
 export type Language = 'enUS' | 'esES';
