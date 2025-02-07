@@ -304,12 +304,13 @@ export const login = async (req: LoginRequest, res: Response) => {
 /**
  * Logout the user.
  */
-export const logout = async (req: Request, res: Response) => {
+export const logout = async (_: Request, res: Response): Promise<void> => {
     try {
         res.clearCookie('token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            secure: true,
+            sameSite: 'none',
+            path: '/',
         });
 
         res.status(200).json({
