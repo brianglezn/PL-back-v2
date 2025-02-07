@@ -263,7 +263,7 @@ export const login = async (req: LoginRequest, res: Response) => {
         );
 
         // Generate JWT token
-        const token = jwt.sign(
+        const jwtToken = jwt.sign(
             {
                 userId: user._id,
                 email: user.email,
@@ -274,19 +274,18 @@ export const login = async (req: LoginRequest, res: Response) => {
         );
 
         // Set HTTP-only cookie
-        setCookie(res, token);
+        setCookie(res, jwtToken);
 
         // Send response
-        return res.status(200).json({
+        res.status(200).json({
             success: true,
             message: 'Login successful',
-            user: {
-                id: user._id,
+            statusCode: 200,
+            token: jwtToken,
+            data: {
+                _id: user._id,
                 username: user.username,
-                email: user.email,
-                name: user.name,
-                language: user.language,
-                currency: user.currency
+                email: user.email
             }
         });
 
