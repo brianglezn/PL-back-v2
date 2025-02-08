@@ -9,4 +9,11 @@ export interface ITransaction {
     category: ObjectId;
     createdAt: string;
     updatedAt: string;
+    isRecurrent: boolean;
+    recurrenceType?: RecurrenceType;
+    recurrenceEndDate?: string;
+    recurrenceId?: string;
+    isOriginalRecurrence?: boolean;
 }   
+
+export type RecurrenceType = 'weekly' | 'monthly' | 'yearly' | null;
