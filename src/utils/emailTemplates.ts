@@ -1,3 +1,4 @@
+// This function generates the email layout with a specified content.
 export const emailLayout = (content: string) => `
 <div style="max-width:640px;margin:0 auto;font-family:'Arial',sans-serif;color:#212529;background-color:#f8f9fa;padding:20px">
     <div style="background-color:#ffffff;border-radius:8px;padding:40px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
@@ -16,6 +17,7 @@ export const emailLayout = (content: string) => `
     </div>
 </div>`;
 
+// This function creates a welcome email template for new users.
 export const getWelcomeEmailTemplate = (name: string, dashboardUrl: string) => emailLayout(`
     <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">💰 ${name}, welcome to Profit-Lost! 💰</h1>
     
@@ -70,7 +72,9 @@ export const getWelcomeEmailTemplate = (name: string, dashboardUrl: string) => e
     </p>
 `);
 
+// This function generates an email template for account deletion confirmation.
 export const getAccountDeletionEmailTemplate = (name: string, language: string = 'enUS') => {
+    // If the language is Spanish, return the Spanish email template
     if (language === 'esES') {
         return emailLayout(`
             <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">👋 Cuenta eliminada con éxito 👋</h1>
@@ -96,6 +100,7 @@ export const getAccountDeletionEmailTemplate = (name: string, language: string =
         `);
     }
 
+    // If the language is English, return the English email template
     return emailLayout(`
         <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">👋 Account Successfully Deleted 👋</h1>
         
@@ -120,7 +125,9 @@ export const getAccountDeletionEmailTemplate = (name: string, language: string =
     `);
 };
 
+// This function creates an email template for password change notifications.
 export const getPasswordChangeEmailTemplate = (name: string, language: string = 'enUS') => {
+    // If the language is Spanish, return the Spanish email template
     if (language === 'esES') {
         return emailLayout(`
             <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔐 Contraseña actualizada con éxito 🔐</h1>
@@ -154,10 +161,11 @@ export const getPasswordChangeEmailTemplate = (name: string, language: string = 
         </p>
         `);
     }
-    
-    if (language === 'enUS') {
-        return emailLayout(`
-                <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔐 Password Updated Successfully 🔐</h1>
+
+    // If the language is English, return the English email template
+    return emailLayout(`
+        <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔐 Password Updated Successfully 🔐</h1>
+
             
             <p style="margin-bottom:20px;line-height:1.6">Hello ${name},</p>
             
@@ -185,12 +193,13 @@ export const getPasswordChangeEmailTemplate = (name: string, language: string = 
 
             <p style="margin-bottom:24px;line-height:1.6">
                 Thank you for trusting Profit-Lost to manage your finances securely.
-            </p>
-        `);
-    }
+        </p>
+    `);
 };
 
+// This function generates a password reset email template with a recovery token.
 export const getPasswordResetEmailTemplate = (name: string, token: string, language: string = 'enUS') => {
+    // If the language is Spanish, return the Spanish email template
     if (language === 'esES') {
         return emailLayout(`
             <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔑 Recuperación de contraseña 🔑</h1>
@@ -218,9 +227,10 @@ export const getPasswordResetEmailTemplate = (name: string, token: string, langu
         `);
     }
 
+    // If the language is English, return the English email template
     return emailLayout(`
-        <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔑 Password Recovery 🔑</h1>
-        
+        <h1 style="color:#fe6f14;margin-bottom:24px;text-align:center">🔑 Password Recovery 🔑</h1>        
+
         <p style="margin-bottom:20px;line-height:1.6">Hello ${name},</p>
         
         <p style="margin-bottom:20px;line-height:1.6">

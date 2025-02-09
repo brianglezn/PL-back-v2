@@ -31,7 +31,7 @@ interface LoginRequest extends Request {
 }
 
 /**
- * Set a cookie in the response.
+ * Sets a cookie in the response with the provided token.
  */
 function setCookie(res: Response, token: string) {
     const cookieOptions = {
@@ -47,7 +47,7 @@ function setCookie(res: Response, token: string) {
 }
 
 /**
- * Register a new user.
+ * Registers a new user by validating input and creating a new user record.
  */
 export const register = async (req: RegisterRequest, res: Response) => {
     try {
@@ -118,10 +118,10 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Hash password
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user
+        // Create a new user object
         const newUser: IUser = {
             username: username.toLowerCase(),
             email: email.toLowerCase(),
@@ -144,7 +144,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
 
         const result = await usersCollection.insertOne(newUser);
 
-        // Generate JWT
+        // Generate a JWT token
         const token = jwt.sign(
             {
                 userId: result.insertedId,
@@ -155,10 +155,10 @@ export const register = async (req: RegisterRequest, res: Response) => {
             { expiresIn: '24h' }
         );
 
-        // Set cookie
+        // Set the cookie with the token
         setCookie(res, token);
 
-        // Enviar correo de bienvenida
+        // Send a welcome email to the new user
         const transporter = nodemailer.createTransport({
             host: 'smtp.hostinger.com',
             port: 465,
@@ -182,7 +182,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             }
         });
 
-        // Send response
+        // Send a successful registration response
         return res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -208,7 +208,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
 };
 
 /**
- * Login a user.
+ * Authenticates a user by logging them in with their credentials.
  */
 export const login = async (req: LoginRequest, res: Response) => {
     try {
@@ -234,7 +234,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Find user
+        // Find the user by email or username
         const user = await usersCollection.findOne({
             $or: [
                 { email: identifier.toLowerCase() },
@@ -242,7 +242,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             ]
         });
 
-        // Check if user exists and verify password
+        // Check if the user exists and verify the password
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({
                 success: false,
@@ -252,7 +252,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Update last login
+        // Update the last login timestamp
         await usersCollection.updateOne(
             { _id: user._id },
             {
@@ -262,7 +262,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             }
         );
 
-        // Generate JWT token
+        // Generate a JWT token for the user
         const jwtToken = jwt.sign(
             {
                 userId: user._id,
@@ -273,10 +273,10 @@ export const login = async (req: LoginRequest, res: Response) => {
             { expiresIn: '24h' }
         );
 
-        // Set HTTP-only cookie
+        // Set the HTTP-only cookie with the token
         setCookie(res, jwtToken);
 
-        // Send response
+        // Send a successful login response
         res.status(200).json({
             success: true,
             message: 'Login successful',
@@ -301,7 +301,7 @@ export const login = async (req: LoginRequest, res: Response) => {
 };
 
 /**
- * Logout the user.
+ * Logs out the user by clearing the authentication cookie.
  */
 export const logout = async (_: Request, res: Response): Promise<void> => {
     try {
@@ -328,6 +328,9 @@ export const logout = async (_: Request, res: Response): Promise<void> => {
     }
 };
 
+/**
+ * Initiates the password recovery process by sending a recovery code to the user's email.
+ */
 export const forgotPassword = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
@@ -351,9 +354,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // Generar token de 6 dígitos
+        // Generate a 6-digit reset token
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
         await usersCollection.updateOne(
             { _id: user._id },
@@ -398,6 +401,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Verifies the provided password reset token for validity.
+ */
 export const verifyResetToken = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
@@ -411,7 +417,7 @@ export const verifyResetToken = async (req: Request, res: Response) => {
             });
         }
 
-        const user = await usersCollection.findOne({ 
+        const user = await usersCollection.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: getCurrentUTCDate() }
         });
@@ -440,6 +446,9 @@ export const verifyResetToken = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Resets the user's password using the provided token and new password.
+ */
 export const resetPassword = async (req: Request, res: Response) => {
     try {
         const { token, newPassword } = req.body;
@@ -453,7 +462,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        const user = await usersCollection.findOne({ 
+        const user = await usersCollection.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: getCurrentUTCDate() }
         });
@@ -467,7 +476,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // Validar contraseña fuerte
+        // Validate strong password
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             return res.status(400).json({
@@ -482,13 +491,13 @@ export const resetPassword = async (req: Request, res: Response) => {
 
         await usersCollection.updateOne(
             { _id: user._id },
-            { 
-                $set: { 
+            {
+                $set: {
                     password: hashedPassword,
                     resetToken: null,
                     resetTokenExpiry: null,
                     updatedAt: getCurrentUTCDate()
-                } 
+                }
             }
         );
 
@@ -507,6 +516,9 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Authenticates a user using Google OAuth.
+ */
 export const googleAuth = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
@@ -543,12 +555,12 @@ export const googleAuth = async (req: Request, res: Response) => {
             if (!user.googleId) {
                 await usersCollection.updateOne(
                     { _id: user._id },
-                    { 
-                        $set: { 
+                    {
+                        $set: {
                             googleId,
                             profileImage: picture || user.profileImage,
                             updatedAt: getCurrentUTCDate()
-                        } 
+                        }
                     }
                 );
             }
@@ -610,4 +622,3 @@ export const googleAuth = async (req: Request, res: Response) => {
         });
     }
 };
-

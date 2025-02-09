@@ -2,9 +2,11 @@ import { MongoClient } from 'mongodb';
 import { google } from 'googleapis';
 import cron from 'node-cron';
 import { Readable } from 'stream';
+
 import { BACKUP_CONFIG } from '../config/backupConfig';
 import { DB_URI, DB_NAME } from '../config/database';
 
+// Interface to define the structure of backup data
 interface BackupData {
     [key: string]: any[];
 }
@@ -12,6 +14,7 @@ interface BackupData {
 class BackupService {
     private drive: any;
 
+    // Constructor to initialize the Google Drive service
     constructor() {
         this.drive = null;
         this.initializeGoogleDrive();
@@ -24,6 +27,7 @@ class BackupService {
         });
     }
 
+    // Initialize the Google Drive service
     private initializeGoogleDrive() {
         try {
             const credentials = JSON.parse(BACKUP_CONFIG.SERVICE_ACCOUNT as string);
@@ -38,6 +42,7 @@ class BackupService {
         }
     }
 
+    // Create a backup of the database
     private async createBackup() {
         const hasAccess = await this.verifyFolderAccess();
         if (!hasAccess) {
@@ -73,6 +78,7 @@ class BackupService {
         }
     }
 
+    // Upload a file to Google Drive
     private async uploadToDrive(fileName: string, fileContent: string) {
         try {
             const fileMetadata = {
@@ -99,6 +105,7 @@ class BackupService {
         }
     }
 
+    // Clean up old backups
     private async cleanOldBackups() {
         try {
             const response = await this.drive.files.list({
@@ -121,6 +128,7 @@ class BackupService {
         }
     }
 
+    // Verify access to the specified folder
     private async verifyFolderAccess(): Promise<boolean> {
         try {
             await this.drive.files.list({
@@ -134,6 +142,7 @@ class BackupService {
         }
     }
 
+    // Start scheduled backups
     public startScheduledBackups() {
         if (!cron.validate(BACKUP_CONFIG.BACKUP_FREQUENCY)) {
             console.error('❌ Invalid backup frequency format');
@@ -148,6 +157,7 @@ class BackupService {
         console.log(`✅ Scheduled backups started: ${BACKUP_CONFIG.BACKUP_FREQUENCY}`);
     }
 
+    // Execute a manual backup
     public async executeManualBackup() {
         try {
             const result = await this.createBackup();

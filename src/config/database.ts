@@ -8,7 +8,7 @@ const DB_PASS = process.env.DB_PASS;
 const DB_NAME = process.env.DB_NAME;
 const DB_URI = `mongodb+srv://${DB_USER}:${DB_PASS}@profit-lost.dojlby3.mongodb.net/?retryWrites=true&w=majority&ssl=true`;
 
-// Create a MongoClient instance
+// Create an instance of MongoClient to interact with the MongoDB database
 const client = new MongoClient(DB_URI, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -17,27 +17,27 @@ const client = new MongoClient(DB_URI, {
     },
 });
 
-// Function to initiate connection with the database
+// Function to establish a connection to the database
 async function connectDB() {
     try {
-        // Connect to the server
+        // Connect to the MongoDB server
         await client.connect();
         console.log('✅ MongoDB connected successfully');
 
-        // Send a ping to confirm the connection
+        // Execute a ping command to verify the connection
         const pingResult = await client.db('admin').command({ ping: 1 });
         console.log('📡 MongoDB ping result:', pingResult);
 
         return client.db(DB_NAME);
     } catch (error) {
         console.error('❌ Error connecting to MongoDB:', error);
-        // Try to close the client if there is an error
+        // Attempt to close the client connection if an error occurs
         try {
             await client.close();
         } catch (closeError) {
             console.error('❌ Error closing MongoDB connection:', closeError);
         }
-        process.exit(1); // Exit the process with error
+        process.exit(1); // Terminate the process with an error status
     }
 }
 

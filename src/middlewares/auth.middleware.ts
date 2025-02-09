@@ -12,7 +12,7 @@ export interface AuthRequest extends Request {
 
 /**
  * Middleware for authentication.
- * Validates the presence and validity of a JWT token in the request cookies.
+ * Checks for the presence and validity of a JWT token in the request cookies or Authorization header.
  *
  * @param req - The incoming HTTP request.
  * @param res - The outgoing HTTP response.
@@ -26,10 +26,10 @@ export const authMiddleware = (
     res.header('Access-Control-Allow-Credentials', 'true');
     
     try {
-        // Try to get the token from the cookie first
+        // Attempt to retrieve the token from the cookie first
         let token = req.cookies.token;
 
-        // If there is no cookie, search in the Authorization header
+        // If no token is found in the cookie, check the Authorization header
         if (!token) {
             const authHeader = req.headers.authorization;
             if (authHeader?.startsWith('Bearer ')) {

@@ -10,13 +10,13 @@ import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
- * Get all transactions for the authenticated user.
+ * Retrieve all transactions for the authenticated user.
  */
 export const getAllTransactions = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -27,7 +27,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Fetch transactions from the database
+        // Retrieve transactions from the database
         const transactions = await transactionsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -57,7 +57,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             { $sort: { date: -1 } }
         ]).toArray();
 
-        // Return transactions
+        // Send the retrieved transactions as a response
         res.status(200).json({
             success: true,
             data: transactions
@@ -74,14 +74,14 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
 };
 
 /**
- * Get transactions by year for the authenticated user.
+ * Retrieve transactions for the authenticated user filtered by year.
  */
 export const getTransactionsByYear = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { year } = req.params;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -92,7 +92,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             return;
         }
 
-        // Fetch transactions from the database
+        // Retrieve transactions from the database filtered by year
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -121,7 +121,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             }
         ]).toArray();
 
-        // Return transactions
+        // Send the retrieved transactions as a response
         res.status(200).json({
             success: true,
             data: transactions,
@@ -139,14 +139,14 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
 };
 
 /**
- * Get transactions by year and month for the authenticated user.
+ * Retrieve transactions for the authenticated user filtered by year and month.
  */
 export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { year, month } = req.params;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -159,7 +159,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
 
         const monthRegex = month ? `-${month}` : '';
 
-        // Fetch transactions from the database
+        // Retrieve transactions from the database filtered by year and month
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -199,7 +199,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             { $sort: { date: -1 } }
         ]).toArray();
 
-        // Return transactions
+        // Send the retrieved transactions as a response
         res.status(200).json({
             success: true,
             data: transactions,
@@ -216,7 +216,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
     }
 };
 
-// Función auxiliar para generar fechas recurrentes
+// Helper function to generate recurrent dates based on the recurrence type
 const generateRecurrentDates = (
     startDate: Date,
     endDate: Date,
@@ -248,9 +248,13 @@ const generateRecurrentDates = (
     return dates;
 };
 
+/**
+ * Validates the transaction data to ensure all required fields are correct.
+ */
 const validateTransactionData = (data: Partial<ITransaction>): { isValid: boolean; error?: { message: string; code: string; } } => {
     if (data.amount !== undefined && typeof data.amount !== 'number') {
         return {
+
             isValid: false,
             error: {
                 message: 'Amount must be a number',
@@ -322,7 +326,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             recurrenceEndDate
         } = req.body;
 
-        // Validate user ID and category ID format
+        // Check if the user ID and category ID formats are valid
         if (!ObjectId.isValid(userId) || !ObjectId.isValid(category)) {
             res.status(400).json({
                 success: false,
@@ -333,7 +337,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Validate amount format
+        // Check if the amount format is valid
         if (typeof amount !== 'number') {
             res.status(400).json({
                 success: false,
@@ -344,7 +348,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Validate description format
+        // Check if the description format is valid
         if (typeof description !== 'string' || !description.trim()) {
             res.status(400).json({
                 success: false,
@@ -355,7 +359,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Validate date format
+        // Check if the date format is valid
         if (!DATE_REGEX.test(date)) {
             res.status(400).json({
                 success: false,
@@ -391,7 +395,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             const startDate = new Date(date);
             const endDate = new Date(recurrenceEndDate);
             
-            // Validar que la fecha final es posterior a la inicial
+            // Ensure the end date is after the start date
             if (endDate <= startDate) {
                 res.status(400).json({
                     success: false,
@@ -468,7 +472,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
         const { id } = req.params;
         const { updateAll, category, date, ...updateData } = req.body;
 
-        // Validar formato de fecha si se proporciona
+        // Validate the date format if provided
         if (date && !DATE_REGEX.test(date)) {
             res.status(400).json({
                 success: false,
@@ -501,7 +505,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Si es recurrente y updateAll, mantener el espaciado temporal
+        // If the transaction is recurrent and updateAll is true, maintain the temporal spacing
         if (updateAll && transaction.recurrenceId && transaction.recurrenceType) {
             const transactions = await transactionsCollection
                 .find({
@@ -511,16 +515,16 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
                 .sort({ date: 1 })
                 .toArray();
 
-            // Actualizar cada transacción manteniendo el espaciado temporal
+            // Update each transaction while maintaining the temporal spacing
             const updatePromises = transactions.map((tx, index) => {
                 if (index === 0 && date) {
-                    // Solo actualizar la fecha de la primera transacción si se proporciona
+                    // Only update the date of the first transaction if provided
                     return transactionsCollection.updateOne(
                         { _id: tx._id },
                         { $set: finalUpdateData }
                     );
                 }
-                // Para el resto, actualizar todo excepto la fecha
+                // For the rest, update everything except the date
                 const { date: _, ...dataWithoutDate } = finalUpdateData;
                 return transactionsCollection.updateOne(
                     { _id: tx._id },
@@ -530,7 +534,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
 
             await Promise.all(updatePromises);
         } else {
-            // Actualización normal de una sola transacción
+            // Normal update of a single transaction
             await transactionsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { $set: finalUpdateData }

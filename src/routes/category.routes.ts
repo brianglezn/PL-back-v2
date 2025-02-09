@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import { 
-    getAllCategories,
-    createCategory,
-    updateCategory,
-    deleteCategory
-} from '../controllers/category.controller';
+
+import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../controllers/category.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();

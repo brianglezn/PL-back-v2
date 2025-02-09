@@ -1,13 +1,7 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import {
-    getAllTransactions,
-    getTransactionsByYear,
-    getTransactionsByYearAndMonth,
-    createTransaction,
-    updateTransaction,
-    deleteTransaction
-} from '../controllers/transaction.controller';
+
+import { getAllTransactions, getTransactionsByYear, getTransactionsByYearAndMonth, createTransaction, updateTransaction, deleteTransaction } from '../controllers/transaction.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();

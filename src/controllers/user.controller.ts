@@ -10,25 +10,25 @@ import type { IUser } from '../types/models/IUser';
 import { getAccountDeletionEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
-// Extend the AuthRequest interface for file handling with Multer
+// Extend the AuthRequest interface to include file handling with Multer
 interface MulterRequest extends AuthRequest {
     file?: Express.Multer.File;
 }
 
-// MongoDB users collection
+// MongoDB collections for users, accounts, categories, and transactions
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
 const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
- * Fetch the authenticated user's data.
+ * Retrieve the data of the authenticated user.
  */
 export const getUserData = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -39,10 +39,10 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Fetch user data from the database
+        // Retrieve user data from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) }) as IUser | null;
 
-        // Check if user exists
+        // Verify if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -53,7 +53,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Return user data
+        // Send back the user data
         res.status(200).json({
             success: true,
             data: {
@@ -69,7 +69,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting user data:', error);
+        console.error('❌ Error retrieving user data:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -80,14 +80,14 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
 };
 
 /**
- * Update the authenticated user's profile information.
+ * Update the profile information of the authenticated user.
  */
 export const updateUserProfile = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { viewMode, name, surname, language, currency, dateFormat, timeFormat } = req.body;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -98,10 +98,10 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Fetch user data from the database
+        // Retrieve user data from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Check if user exists
+        // Verify if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -112,7 +112,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Prepare update data
+        // Prepare the data for updating the user profile
         const updateData: Partial<IUser> = {
             name,
             surname,
@@ -126,19 +126,19 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             updatedAt: getCurrentUTCDate()
         };
 
-        // Handle profile image update
+        // Process the profile image update if a new file is provided
         if (req.file) {
             try {
-                // Delete old profile image if it exists
+                // Remove the old profile image if it exists
                 if (user.profileImagePublicId) {
                     try {
                         await cloudinary.uploader.destroy(user.profileImagePublicId);
                     } catch (cloudinaryError) {
-                        console.error('❌ Error deleting old image from cloudinary:', cloudinaryError);
+                        console.error('❌ Error deleting old image from Cloudinary:', cloudinaryError);
                     }
                 }
 
-                // Upload new profile image
+                // Upload the new profile image
                 const result = await new Promise<UploadApiResponse>((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream({
                         resource_type: 'image',
@@ -153,7 +153,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
                     uploadStream.end(req.file!.buffer);
                 });
 
-                // Update user data with new profile image
+                // Update user data with the new profile image information
                 updateData.profileImage = result.secure_url;
                 updateData.profileImagePublicId = result.public_id;
             } catch (error) {
@@ -168,13 +168,13 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             }
         }
 
-        // Update user data in the database
+        // Update the user data in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             { $set: updateData }
         );
 
-        // Check if user exists
+        // Verify if the user exists
         if (result.matchedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -185,7 +185,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Check if changes were made
+        // Check if any changes were made
         if (result.modifiedCount === 0) {
             res.status(400).json({
                 success: false,
@@ -196,7 +196,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Return success message
+        // Send back a success message
         res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
@@ -214,13 +214,14 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
 };
 
 /**
- * Update the authenticated user's theme.
+ * Update the theme preference of the authenticated user.
  */
 export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { theme } = req.body;
 
+        // Validate the theme value
         if (!theme || !['light', 'dark'].includes(theme)) {
             res.status(400).json({
                 success: false,
@@ -231,6 +232,7 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
+        // Update the user's theme preference in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             {
@@ -241,6 +243,7 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             }
         );
 
+        // Check if the user was found
         if (result.modifiedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -251,8 +254,10 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
+        // Retrieve the updated user data
         const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
+        // Send back the updated user data
         res.status(200).json({
             success: true,
             data: updatedUser,
@@ -271,13 +276,14 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
 };
 
 /**
- * Update the authenticated user's view mode.
+ * Update the view mode preference of the authenticated user.
  */
 export const updateUserViewMode = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { viewMode } = req.body;
 
+        // Validate the view mode value
         if (!viewMode || !['yearToday', 'fullYear'].includes(viewMode)) {
             res.status(400).json({
                 success: false,
@@ -288,6 +294,7 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
+        // Update the user's view mode preference in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             {
@@ -298,6 +305,7 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             }
         );
 
+        // Check if the user was found
         if (result.modifiedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -308,8 +316,10 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
+        // Retrieve the updated user data
         const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
+        // Send back the updated user data
         res.status(200).json({
             success: true,
             data: updatedUser,
@@ -328,13 +338,14 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
 };
 
 /**
- * Change the authenticated user's password.
+ * Change the password of the authenticated user.
  */
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { currentPassword, newPassword, language } = req.body;
 
+        // Ensure both current and new passwords are provided
         if (!currentPassword || !newPassword) {
             res.status(400).json({
                 success: false,
@@ -345,6 +356,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // Validate the new password strength
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             res.status(400).json({
@@ -356,6 +368,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // Retrieve the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
         if (!user) {
             res.status(404).json({
@@ -367,6 +380,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // Verify the current password
         const passwordMatch = await bcrypt.compare(currentPassword, user.password);
         if (!passwordMatch) {
             res.status(400).json({
@@ -378,8 +392,10 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // Hash the new password
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
+        // Update the user's password in the database
         await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             { 
@@ -390,6 +406,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             }
         );
 
+        // Set up the email transporter
         const transporter = nodemailer.createTransport({
             host: 'smtp.hostinger.com',
             port: 465,
@@ -400,6 +417,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             }
         });
 
+        // Send a notification email about the password change
         await transporter.sendMail({
             from: '"Profit-Lost" <no-reply@profit-lost.com>',
             to: user.email,
@@ -407,6 +425,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             html: getPasswordChangeEmailTemplate(user.name, user.language)
         });
 
+        // Send back a success message
         res.status(200).json({
             success: true,
             message: 'Password changed successfully',
@@ -424,13 +443,13 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * Delete the authenticated user's profile image.
+ * Delete the profile image of the authenticated user.
  */
 export const deleteProfileImage = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -441,9 +460,10 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
+        // Retrieve the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Check if user exists
+        // Verify if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -454,16 +474,16 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Delete profile image from cloudinary if it exists
+        // Remove the profile image from Cloudinary if it exists
         if (user.profileImagePublicId) {
             try {
                 await cloudinary.uploader.destroy(user.profileImagePublicId);
             } catch (cloudinaryError) {
-                console.error('❌ Error deleting image from cloudinary:', cloudinaryError);
+                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
             }
         }
 
-        // Update user data in the database
+        // Update the user data in the database to remove the profile image
         await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             {
@@ -472,7 +492,7 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             }
         );
 
-        // Return success message
+        // Send back a success message
         res.status(200).json({
             success: true,
             message: 'Profile image deleted successfully',
@@ -490,13 +510,13 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
 };
 
 /**
- * Delete the authenticated user's account.
+ * Delete the account of the authenticated user.
  */
 export const deleteUserAccount = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -507,9 +527,10 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Retrieve the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Check if user exists
+        // Verify if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -520,7 +541,7 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Send goodbye email before deleting the account
+        // Send a goodbye email before deleting the account
         const transporter = nodemailer.createTransport({
             host: 'smtp.hostinger.com',
             port: 465,
@@ -538,36 +559,37 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             html: getAccountDeletionEmailTemplate(user.name, user.language)
         });
 
-        // Eliminar imagen de perfil de Cloudinary si existe
+        // Remove the profile image from Cloudinary if it exists
         if (user.profileImagePublicId) {
             try {
                 await cloudinary.uploader.destroy(user.profileImagePublicId);
             } catch (cloudinaryError) {
-                console.error('❌ Error deleting image from cloudinary:', cloudinaryError);
+                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
             }
         }
 
-        // Eliminar todos los datos del usuario de todas las colecciones
+        // Delete all user-related data from all collections
         const userObjectId = new ObjectId(userId);
 
-        // Usar Promise.all para ejecutar todas las operaciones de eliminación en paralelo
+        // Use Promise.all to execute all deletion operations in parallel
         await Promise.all([
-            // Eliminar cuentas del usuario
+            // Delete the user's accounts
             accountsCollection.deleteMany({ user_id: userObjectId }),
             
-            // Eliminar categorías del usuario
+            // Delete the user's categories
             categoriesCollection.deleteMany({ user_id: userObjectId }),
             
-            // Eliminar transacciones del usuario
+            // Delete the user's transactions
             transactionsCollection.deleteMany({ user_id: userObjectId }),
                         
-            // Finalmente, eliminar el usuario
+            // Finally, delete the user
             usersCollection.deleteOne({ _id: userObjectId })
         ]);
 
-        // Limpiar la cookie del token
+        // Clear the token cookie
         res.clearCookie('token');
 
+        // Send back a success message
         res.status(200).json({
             success: true,
             message: 'User account and all related data deleted successfully',
@@ -585,14 +607,14 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
 };
 
 /**
- * Update the authenticated user's accounts order.
+ * Update the order of the authenticated user's accounts.
  */
 export const updateAccountsOrder = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { accountsOrder } = req.body;
 
-        // Validate user ID format
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -603,7 +625,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             return;
         }
 
-        // Validate accounts order format
+        // Validate the format of the accounts order
         if (!Array.isArray(accountsOrder)) {
             res.status(400).json({
                 success: false,
@@ -614,7 +636,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             return;
         }
 
-        // Update user data in the database
+        // Update the user's accounts order in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             {
@@ -625,7 +647,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             }
         );
 
-        // Check if changes were made
+        // Check if any changes were made
         if (result.modifiedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -636,7 +658,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             return;
         }
 
-        // Return success message
+        // Send back a success message
         res.status(200).json({
             success: true,
             message: 'Accounts order updated successfully',

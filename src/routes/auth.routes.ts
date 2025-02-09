@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response, RequestHandler } from 'express';
+
 import { login, logout, register, forgotPassword, verifyResetToken, resetPassword, googleAuth } from '../controllers/auth.controller';
 
 const router = Router();

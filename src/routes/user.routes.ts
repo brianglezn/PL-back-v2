@@ -1,16 +1,8 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
 import multer from 'multer';
-import {
-    getUserData,
-    updateUserProfile,
-    changePassword,
-    deleteProfileImage,
-    deleteUserAccount,
-    updateAccountsOrder,
-    updateUserTheme,
-    updateUserViewMode
-} from '../controllers/user.controller';
+
+import { getUserData, updateUserProfile, changePassword, deleteProfileImage, deleteUserAccount, updateAccountsOrder, updateUserTheme, updateUserViewMode } from '../controllers/user.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();

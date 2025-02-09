@@ -1,12 +1,7 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import { 
-    getAllAccounts,
-    getAccountsByYear,
-    createAccount,
-    updateAccount,
-    deleteAccount
-} from '../controllers/account.controller';
+
+import { getAllAccounts, getAccountsByYear, createAccount, updateAccount, deleteAccount } from '../controllers/account.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();

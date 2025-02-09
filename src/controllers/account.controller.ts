@@ -5,13 +5,13 @@ import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { IAccount, IYearRecord, YearRecord } from '../types/models/IAccount';
 import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
-import { encryptNumber, decryptNumber, encryptText } from '../utils/encryption';
+import { decryptNumber, encryptText } from '../utils/encryption';
 
 // MongoDB accounts collection
 const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
 
 /**
- * Get all accounts for the authenticated user.
+ * Retrieve all accounts associated with the authenticated user.
  */
 export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -34,7 +34,7 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting accounts:', error);
+        console.error('❌ Error retrieving accounts:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -45,7 +45,7 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * Get accounts by year for the authenticated user.
+ * Retrieve accounts for a specific year associated with the authenticated user.
  */
 export const getAccountsByYear = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -94,7 +94,7 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting accounts by year:', error);
+        console.error('❌ Error retrieving accounts by year:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -139,7 +139,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             updatedAt: getCurrentUTCDate()
         };
 
-        // Validate date format
+        // Validate the date format
         if (!DATE_REGEX.test(newAccount.createdAt) || !DATE_REGEX.test(newAccount.updatedAt)) {
             res.status(400).json({
                 success: false,
@@ -190,7 +190,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         const { id } = req.params;
         const { accountName, configuration, records } = req.body;
 
-        // Validate ID format
+        // Validate the ID format
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -201,7 +201,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Prepare update data
+        // Prepare the data for the update
         const updateData: Partial<IAccount> = {
             updatedAt: getCurrentUTCDate()
         };
@@ -229,7 +229,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             updateData.records = encryptedRecords;
         }
 
-        // Update account in the database
+        // Update the account in the database
         const result = await accountsCollection.findOneAndUpdate(
             {
                 _id: new ObjectId(id),
@@ -241,7 +241,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             }
         );
 
-        // Check if update was successful
+        // Check if the update was successful
         if (!result) {
             console.error('❌ Error in the update: Account not found');
             res.status(404).json({
@@ -253,7 +253,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Modificar la respuesta para enviar datos decriptados
+        // Modify the response to send decrypted data
         const decryptedAccount = {
             ...result,
             _id: result._id.toString(),
@@ -289,7 +289,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
         const { userId } = req.user;
         const { id } = req.params;
 
-        // Validate ID format
+        // Validate the ID format
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -300,13 +300,13 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Delete account from the database
+        // Remove the account from the database
         const result = await accountsCollection.deleteOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
         });
 
-        // Check if deletion was successful
+        // Check if the deletion was successful
         if (result.deletedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -317,7 +317,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Return success message
+        // Return a success message
         res.status(200).json({
             success: true,
             message: 'Account deleted successfully',
@@ -334,6 +334,9 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
+/**
+ * Create an encrypted year record.
+ */
 const createEncryptedYearRecord = (): IYearRecord => {
     return {
         jan: encryptText('0'),
@@ -351,6 +354,9 @@ const createEncryptedYearRecord = (): IYearRecord => {
     };
 };
 
+/**
+ * Decrypt a year record.
+ */
 const decryptYearRecord = (yearRecord: IYearRecord): YearRecord => {
     return {
         jan: decryptNumber(yearRecord.jan),

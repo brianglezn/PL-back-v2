@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
+
 import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { INote } from '../types/models/INote';
@@ -10,7 +11,7 @@ import { encryptText, decryptText } from '../utils/encryption';
 const notesCollection = client.db(process.env.DB_NAME).collection('notes');
 
 /**
- * Get all notes for the authenticated user.
+ * Retrieve all notes for the authenticated user.
  */
 export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -29,7 +30,7 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
         const notes = await notesCollection.find({ user_id: new ObjectId(userId) }).toArray();
         const decryptedNotes = notes.map(note => ({
             ...note,
-            title: note.title ? decryptText(note.title) : 'Sin título',
+            title: note.title ? decryptText(note.title) : 'Untitled',
             content: note.content ? decryptText(note.content) : ''
         }));
 
@@ -40,7 +41,7 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting notes:', error);
+        console.error('❌ Error retrieving notes:', error);
         res.status(500).json({
             success: false,
             message: 'Error retrieving notes',
@@ -125,14 +126,14 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
-                message: 'ID inválido',
+                message: 'Invalid ID format',
                 error: 'INVALID_ID_FORMAT',
                 statusCode: 400
             });
             return;
         }
 
-        // First, check if the note exists
+        // Check if the note exists
         const existingNote = await notesCollection.findOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
@@ -160,7 +161,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             },
             {
                 $set: {
-                    title: encryptedTitle || encryptText('Sin título'),
+                    title: encryptedTitle || encryptText('Untitled'),
                     content: encryptedContent,
                     updatedAt: getCurrentUTCDate()
                 }

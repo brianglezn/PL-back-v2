@@ -5,22 +5,29 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
+// Import the database connection
 import { connectDB } from './config/database';
+
+// Import routes
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
+
+// Import services
 import { backupService } from './services/backup.service';
 
 // Load environment variables from .env file
 dotenv.config();
 
+// Create the express application
 const app: Application = express();
+
+// Define the port
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
 // Enable Cross-Origin Resource Sharing (CORS) for specific origins
 app.use(cors({
     origin: (origin, callback) => {
@@ -41,11 +48,17 @@ app.use(cors({
     exposedHeaders: ['Set-Cookie'],
     maxAge: 86400
 }));
+
+// Parse JSON bodies
 app.use(express.json());
+
+// Parse cookies
 app.use(cookieParser());
+
+// Log requests
 app.use(morgan('dev'));
 
-// Middleware adicional para asegurar los headers CORS
+// Allow credentials
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     next();
@@ -64,10 +77,10 @@ app.get('/health', (_, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Iniciar el servicio de backups programados
+// Start the scheduled backups service
 backupService.startScheduledBackups();
 
-// Endpoint para backups manuales
+// Manual backup endpoint
 app.post('/api/backup', async (req, res) => {
     try {
         const result = await backupService.executeManualBackup();

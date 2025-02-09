@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import {
-    getAllNotes,
-    createNote,
-    updateNote,
-    deleteNote
-} from '../controllers/note.controller';
+
+import { getAllNotes, createNote, updateNote, deleteNote } from '../controllers/note.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();
