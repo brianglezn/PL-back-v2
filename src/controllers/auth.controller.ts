@@ -6,7 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 import { client } from '../config/database';
 import { IUser } from '../types/models/IUser';
-import { getWelcomeEmailTemplate, getPasswordResetEmailTemplate } from '../utils/emailTemplates';
+import { getWelcomeEmailTemplate, getPasswordResetEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
 // MongoDB users collection
@@ -500,6 +500,25 @@ export const resetPassword = async (req: Request, res: Response) => {
                 }
             }
         );
+
+        // Set up the email transporter
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.hostinger.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: 'no-reply@profit-lost.com',
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
+
+        // Send a notification email about the password change
+        await transporter.sendMail({
+            from: '"Profit-Lost" <no-reply@profit-lost.com>',
+            to: user.email,
+            subject: user.language === 'esES' ? 'Contraseña actualizada con éxito' : 'Password Changed Successfully',
+            html: getPasswordChangeEmailTemplate(user.name, user.language)
+        });
 
         res.status(200).json({
             success: true,
