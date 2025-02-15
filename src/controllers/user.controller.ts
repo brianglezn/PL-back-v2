@@ -541,6 +541,15 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Remove the profile image from Cloudinary if it exists
+        if (user.profileImagePublicId) {
+            try {
+                await cloudinary.uploader.destroy(user.profileImagePublicId);
+            } catch (cloudinaryError) {
+                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
+            }
+        }
+
         // Send a goodbye email before deleting the account
         const transporter = nodemailer.createTransport({
             host: 'smtp.hostinger.com',
@@ -558,15 +567,6 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             subject: user.language === 'esES' ? 'Cuenta eliminada con éxito' : 'Account Successfully Deleted',
             html: getAccountDeletionEmailTemplate(user.name, user.language)
         });
-
-        // Remove the profile image from Cloudinary if it exists
-        if (user.profileImagePublicId) {
-            try {
-                await cloudinary.uploader.destroy(user.profileImagePublicId);
-            } catch (cloudinaryError) {
-                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
-            }
-        }
 
         // Delete all user-related data from all collections
         const userObjectId = new ObjectId(userId);
