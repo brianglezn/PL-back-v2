@@ -675,6 +675,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
         });
     }
 };
+
 /**
  * Updates the preferences for new users.
  */
@@ -773,6 +774,58 @@ export const completeOnboarding = async (req: AuthRequest, res: Response): Promi
         });
     } catch (error) {
         console.error('❌ Error completing onboarding:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Updates the onboarding section for the authenticated user.
+ */
+export const updateOnboardingSection = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        const { section } = req.body;
+
+        // Validate the format of the user ID
+        if (!ObjectId.isValid(userId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format',
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+
+        // Update the user's onboarding section in the database
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $addToSet: {
+                    'onboarding.sections': {
+                        section,
+                        shown: true
+                    }
+                },
+                $set: {
+                    updatedAt: getCurrentUTCDate()
+                }
+            }
+        );
+
+        // Respond with success message
+        res.status(200).json({
+            success: true,
+            message: 'Onboarding section updated successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error updating onboarding section:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
