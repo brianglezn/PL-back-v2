@@ -64,7 +64,8 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 surname: user.surname,
                 profileImage: user.profileImage,
                 accountsOrder: user.accountsOrder,
-                preferences: user.preferences
+                preferences: user.preferences,
+                onboarding: user.onboarding
             },
             statusCode: 200
         });
@@ -117,7 +118,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             name,
             surname,
             preferences: {
-                ...user.preferences, 
+                ...user.preferences,
                 language: language || user.preferences.language,
                 currency: currency || user.preferences.currency,
                 dateFormat: dateFormat || user.preferences.dateFormat,
@@ -398,11 +399,11 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
         // Update the user's password in the database
         await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
-            { 
-                $set: { 
+            {
+                $set: {
                     password: hashedNewPassword,
                     updatedAt: getCurrentUTCDate()
-                } 
+                }
             }
         );
 
@@ -575,13 +576,13 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
         await Promise.all([
             // Delete the user's accounts
             accountsCollection.deleteMany({ user_id: userObjectId }),
-            
+
             // Delete the user's categories
             categoriesCollection.deleteMany({ user_id: userObjectId }),
-            
+
             // Delete the user's transactions
             transactionsCollection.deleteMany({ user_id: userObjectId }),
-                        
+
             // Finally, delete the user
             usersCollection.deleteOne({ _id: userObjectId })
         ]);
@@ -666,6 +667,112 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
         });
     } catch (error) {
         console.error('❌ Error updating accounts order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+/**
+ * Updates the preferences for new users.
+ */
+export const onboardingPreferences = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        const preferences = req.body;
+        // Validate the format of the user ID
+        if (!ObjectId.isValid(userId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format',
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+        // Update the user's preferences in the database
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: {
+                    preferences,
+                    updatedAt: getCurrentUTCDate()
+                }
+            }
+        );
+        // Check if the update was successful
+        if (result.modifiedCount === 0) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found',
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
+            });
+            return;
+        }
+        // Respond with a success message
+        res.status(200).json({
+            success: true,
+            message: 'User preferences updated successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error updating user preferences:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'SERVER_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Finalizes the onboarding process for the new user.
+ */
+export const completeOnboarding = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        // Validate the format of the user ID
+        if (!ObjectId.isValid(userId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format',
+                error: 'INVALID_ID_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+        // Mark the onboarding process as completed in the database
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: {
+                    'onboarding.completed': true,
+                    updatedAt: getCurrentUTCDate()
+                }
+            }
+        );
+        // Check if the update was successful
+        if (result.modifiedCount === 0) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found',
+                error: 'USER_NOT_FOUND',
+                statusCode: 404
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Onboarding completed successfully',
+            statusCode: 200
+        });
+    } catch (error) {
+        console.error('❌ Error completing onboarding:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

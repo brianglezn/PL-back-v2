@@ -31,7 +31,7 @@ interface LoginRequest extends Request {
 }
 
 /**
- * Sets a cookie in the response with the provided token.
+ * Sets a cookie in the response containing the provided token.
  */
 function setCookie(res: Response, token: string) {
     const cookieOptions = {
@@ -47,13 +47,13 @@ function setCookie(res: Response, token: string) {
 }
 
 /**
- * Registers a new user by validating input and creating a new user record.
+ * Registers a new user by validating input and creating a new user record in the database.
  */
 export const register = async (req: RegisterRequest, res: Response) => {
     try {
         const { username, email, password, name, surname } = req.body;
 
-        // Validate required fields
+        // Validate that all required fields are provided
         if (!username || !email || !password || !name || !surname) {
             return res.status(400).json({
                 success: false,
@@ -63,7 +63,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate email format
+        // Validate the format of the email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({
@@ -74,7 +74,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate username format (only lowercase letters and numbers)
+        // Validate the format of the username (only lowercase letters and numbers)
         const usernameRegex = /^[a-z0-9]{3,20}$/;
         if (!usernameRegex.test(username)) {
             return res.status(400).json({
@@ -85,18 +85,18 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate strong password
+        // Validate that the password is strong
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
                 success: false,
-                message: 'The password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter and one number',
+                message: 'The password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number',
                 error: 'PASSWORD_TOO_WEAK',
                 statusCode: 400
             });
         }
 
-        // Check if the email already exists
+        // Check if the email already exists in the database
         const existingEmail = await usersCollection.findOne({ email: email.toLowerCase() });
         if (existingEmail) {
             return res.status(409).json({
@@ -107,7 +107,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Check if the username already exists
+        // Check if the username already exists in the database
         const existingUsername = await usersCollection.findOne({ username: username.toLowerCase() });
         if (existingUsername) {
             return res.status(409).json({
@@ -118,10 +118,10 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Hash the password
+        // Hash the password before storing it
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create a new user object
+        // Create a new user object with the provided data
         const newUser: IUser = {
             username: username.toLowerCase(),
             email: email.toLowerCase(),
@@ -139,12 +139,16 @@ export const register = async (req: RegisterRequest, res: Response) => {
             accountsOrder: [],
             lastLogin: getCurrentUTCDate(),
             createdAt: getCurrentUTCDate(),
-            updatedAt: getCurrentUTCDate()
+            updatedAt: getCurrentUTCDate(),
+            onboarding: {
+                completed: false,
+                sections: []
+            }
         };
 
         const result = await usersCollection.insertOne(newUser);
 
-        // Generate a JWT token
+        // Generate a JWT token for the newly registered user
         const token = jwt.sign(
             {
                 userId: result.insertedId,
@@ -155,7 +159,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             { expiresIn: '24h' }
         );
 
-        // Set the cookie with the token
+        // Set the cookie with the generated token
         setCookie(res, token);
 
         // Send a welcome email to the new user
@@ -182,7 +186,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             }
         });
 
-        // Send a successful registration response
+        // Send a response indicating successful registration
         return res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -214,7 +218,7 @@ export const login = async (req: LoginRequest, res: Response) => {
     try {
         const { identifier, password } = req.body;
 
-        // Validate required fields
+        // Validate that both identifier and password are provided
         if (!identifier || !password) {
             return res.status(400).json({
                 success: false,
@@ -224,7 +228,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Validate input format
+        // Validate the format of the input data
         if (typeof identifier !== 'string' || typeof password !== 'string') {
             return res.status(400).json({
                 success: false,
@@ -234,7 +238,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Find the user by email or username
+        // Find the user by either email or username
         const user = await usersCollection.findOne({
             $or: [
                 { email: identifier.toLowerCase() },
@@ -242,7 +246,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             ]
         });
 
-        // Check if the user exists and verify the password
+        // Check if the user exists and verify the provided password
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({
                 success: false,
@@ -252,7 +256,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Update the last login timestamp
+        // Update the last login timestamp for the user
         await usersCollection.updateOne(
             { _id: user._id },
             {
@@ -262,7 +266,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             }
         );
 
-        // Generate a JWT token for the user
+        // Generate a JWT token for the authenticated user
         const jwtToken = jwt.sign(
             {
                 userId: user._id,
@@ -273,10 +277,10 @@ export const login = async (req: LoginRequest, res: Response) => {
             { expiresIn: '24h' }
         );
 
-        // Set the HTTP-only cookie with the token
+        // Set the HTTP-only cookie with the generated token
         setCookie(res, jwtToken);
 
-        // Send a successful login response
+        // Send a response indicating successful login
         res.status(200).json({
             success: true,
             message: 'Login successful',
@@ -335,6 +339,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
 
+        // Validate that the email is provided
         if (!email) {
             return res.status(400).json({
                 success: false,
@@ -344,6 +349,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
             });
         }
 
+        // Check if the user exists by the provided email
         const user = await usersCollection.findOne({ email: email.toLowerCase() });
         if (!user) {
             return res.status(404).json({
@@ -356,7 +362,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
         // Generate a 6-digit reset token
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // Token valid for 15 minutes
 
         await usersCollection.updateOne(
             { _id: user._id },
@@ -378,6 +384,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
             }
         });
 
+        // Send the password reset email to the user
         await transporter.sendMail({
             from: '"Profit-Lost" <no-reply@profit-lost.com>',
             to: user.email,
@@ -402,12 +409,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
 };
 
 /**
- * Verifies the provided password reset token for validity.
+ * Verifies the validity of the provided password reset token.
  */
 export const verifyResetToken = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
 
+        // Validate that the token is provided
         if (!token) {
             return res.status(400).json({
                 success: false,
@@ -417,6 +425,7 @@ export const verifyResetToken = async (req: Request, res: Response) => {
             });
         }
 
+        // Check if the token is valid and not expired
         const user = await usersCollection.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: getCurrentUTCDate() }
@@ -453,6 +462,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     try {
         const { token, newPassword } = req.body;
 
+        // Validate that both token and new password are provided
         if (!token || !newPassword) {
             return res.status(400).json({
                 success: false,
@@ -462,6 +472,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
+        // Check if the token is valid and not expired
         const user = await usersCollection.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: getCurrentUTCDate() }
@@ -476,7 +487,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // Validate strong password
+        // Validate that the new password is strong
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             return res.status(400).json({
@@ -542,6 +553,7 @@ export const googleAuth = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
 
+        // Validate that the Google token is provided
         if (!token) {
             return res.status(400).json({
                 success: false,
@@ -551,6 +563,7 @@ export const googleAuth = async (req: Request, res: Response) => {
             });
         }
 
+        // Verify the Google token and retrieve the payload
         const ticket = await oAuthClient.verifyIdToken({
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID
@@ -571,6 +584,7 @@ export const googleAuth = async (req: Request, res: Response) => {
         let user = await usersCollection.findOne({ email }) as IUser | null;
 
         if (user) {
+            // If the user exists but does not have a Google ID, update the user record
             if (!user.googleId) {
                 await usersCollection.updateOne(
                     { _id: user._id },
@@ -584,6 +598,7 @@ export const googleAuth = async (req: Request, res: Response) => {
                 );
             }
         } else {
+            // Create a new user if they do not exist
             const username = email!.split('@')[0].toLowerCase();
             const newUser: IUser = {
                 username,
@@ -603,7 +618,11 @@ export const googleAuth = async (req: Request, res: Response) => {
                 accountsOrder: [],
                 lastLogin: getCurrentUTCDate(),
                 createdAt: getCurrentUTCDate(),
-                updatedAt: getCurrentUTCDate()
+                updatedAt: getCurrentUTCDate(),
+                onboarding: {
+                    completed: false,
+                    sections: []
+                }
             };
 
             const result = await usersCollection.insertOne(newUser);
@@ -613,6 +632,7 @@ export const googleAuth = async (req: Request, res: Response) => {
             };
         }
 
+        // Generate a JWT token for the authenticated user
         const jwtToken = jwt.sign(
             {
                 userId: user._id,
@@ -623,6 +643,7 @@ export const googleAuth = async (req: Request, res: Response) => {
             { expiresIn: '24h' }
         );
 
+        // Set the cookie with the generated token
         setCookie(res, jwtToken);
 
         res.status(200).json({

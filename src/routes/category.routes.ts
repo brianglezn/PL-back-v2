@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
 
-import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../controllers/category.controller';
+import { getAllCategories, createCategory, updateCategory, deleteCategory, createDefaultCategories } from '../controllers/category.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -23,5 +23,6 @@ router.get('/all', authMiddleware, wrapHandler(getAllCategories));
 router.post('/create', authMiddleware, wrapHandler(createCategory));
 router.put('/:id', authMiddleware, wrapHandler(updateCategory));
 router.delete('/:id', authMiddleware, wrapHandler(deleteCategory));
+router.post('/default', authMiddleware, wrapHandler(createDefaultCategories));
 
 export default router;

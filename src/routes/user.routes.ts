@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
 import multer from 'multer';
 
-import { getUserData, updateUserProfile, changePassword, deleteProfileImage, deleteUserAccount, updateAccountsOrder, updateUserTheme, updateUserViewMode } from '../controllers/user.controller';
+import { getUserData, updateUserProfile, changePassword, deleteProfileImage, deleteUserAccount, updateAccountsOrder, updateUserTheme, updateUserViewMode, onboardingPreferences, completeOnboarding } from '../controllers/user.controller';
 import { authMiddleware, type AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -32,5 +32,7 @@ router.post('/password', authMiddleware, wrapHandler(changePassword));
 router.delete('/profile-image', authMiddleware, wrapHandler(deleteProfileImage));
 router.delete('/account', authMiddleware, wrapHandler(deleteUserAccount));
 router.post('/accounts-order', authMiddleware, wrapHandler(updateAccountsOrder));
+router.post('/preferences', authMiddleware, wrapHandler(onboardingPreferences));
+router.post('/complete-onboarding', authMiddleware, wrapHandler(completeOnboarding));
 
 export default router;

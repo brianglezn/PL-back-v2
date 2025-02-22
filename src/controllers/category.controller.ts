@@ -12,13 +12,13 @@ const categoriesCollection = client.db(process.env.DB_NAME).collection('categori
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
- * Retrieve all categories associated with the authenticated user.
+ * Fetch all categories linked to the authenticated user.
  */
 export const getAllCategories = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
 
-        // Validate the format of the user ID
+        // Check if the user ID format is valid
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -29,12 +29,12 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
             return;
         }
 
-        // Fetch categories from the database
+        // Retrieve categories from the database
         const categories = await categoriesCollection
             .find({ user_id: new ObjectId(userId) })
             .toArray();
 
-        // Return a success response with the categories
+        // Send a success response with the categories
         res.status(200).json({
             success: true,
             data: categories,
@@ -52,14 +52,14 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
 };
 
 /**
- * Create a new category for the authenticated user.
+ * Add a new category for the authenticated user.
  */
 export const createCategory = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { name, color } = req.body;
 
-        // Validate that required fields are provided
+        // Ensure required fields are provided
         if (!name || !color) {
             res.status(400).json({
                 success: false,
@@ -70,7 +70,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Check if a category with the same name already exists
+        // Verify if a category with the same name already exists
         const existingCategory = await categoriesCollection.findOne({
             name: name.toLowerCase(),
             user_id: new ObjectId(userId)
@@ -86,7 +86,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Create a new category object
+        // Construct a new category object
         const newCategory: ICategory = {
             user_id: new ObjectId(userId),
             name,
@@ -109,7 +109,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
         // Insert the new category into the database
         const result = await categoriesCollection.insertOne(newCategory);
 
-        // Return a success response with the created category
+        // Send a success response with the created category
         res.status(201).json({
             success: true,
             message: 'Category created successfully',
@@ -128,7 +128,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * Update an existing category for the authenticated user.
+ * Modify an existing category for the authenticated user.
  */
 export const updateCategory = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -136,7 +136,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
         const { id } = req.params;
         const { name, color } = req.body;
 
-        // Validate the format of the category ID
+        // Check if the category ID format is valid
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -147,7 +147,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Validate that required fields are provided
+        // Ensure required fields are provided
         if (!name || !color) {
             res.status(400).json({
                 success: false,
@@ -184,7 +184,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Return a success response
+        // Send a success response
         res.status(200).json({
             success: true,
             message: 'Category updated successfully',
@@ -202,14 +202,14 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * Delete an existing category for the authenticated user.
+ * Remove an existing category for the authenticated user.
  */
 export const deleteCategory = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
 
-        // Validate the format of the category ID
+        // Check if the category ID format is valid
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -220,7 +220,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Check if the category has associated transactions
+        // Verify if the category has associated transactions
         const movementsCount = await transactionsCollection.countDocuments({
             user_id: new ObjectId(userId),
             category: new ObjectId(id)
@@ -237,7 +237,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Delete the category from the database
+        // Remove the category from the database
         const result = await categoriesCollection.deleteOne({
             _id: new ObjectId(id),
             user_id: new ObjectId(userId)
@@ -254,7 +254,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Return a success response
+        // Send a success response
         res.status(200).json({
             success: true,
             message: 'Category deleted successfully',
@@ -262,6 +262,52 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
         });
     } catch (error) {
         console.error('❌ Error deleting category:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: 'DATABASE_ERROR',
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Create default categories for the authenticated user.
+ */
+export const createDefaultCategories = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.user;
+        const { categories } = req.body;
+
+        // Ensure categories is an array
+        if (!Array.isArray(categories)) {
+            res.status(400).json({
+                success: false,
+                message: 'Categories must be an array',
+                error: 'INVALID_FORMAT',
+                statusCode: 400
+            });
+            return;
+        }
+
+        const categoriesWithUserId = categories.map(category => ({
+            user_id: new ObjectId(userId),
+            name: category.name,
+            color: category.color.startsWith('#') ? category.color : `#${category.color}`,
+            createdAt: getCurrentUTCDate(),
+            updatedAt: getCurrentUTCDate()
+        }));
+
+        const result = await categoriesCollection.insertMany(categoriesWithUserId);
+
+        res.status(201).json({
+            success: true,
+            message: 'Default categories created successfully',
+            data: result,
+            statusCode: 201
+        });
+    } catch (error) {
+        console.error('❌ Error creating default categories:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
