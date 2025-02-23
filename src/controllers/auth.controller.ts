@@ -143,7 +143,8 @@ export const register = async (req: RegisterRequest, res: Response) => {
             onboarding: {
                 completed: false,
                 sections: []
-            }
+            },
+            role: 'user'
         };
 
         const result = await usersCollection.insertOne(newUser);
@@ -622,7 +623,8 @@ export const googleAuth = async (req: Request, res: Response) => {
                 onboarding: {
                     completed: false,
                     sections: []
-                }
+                },
+                role: 'user'
             };
 
             const result = await usersCollection.insertOne(newUser);

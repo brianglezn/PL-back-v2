@@ -18,6 +18,7 @@ export interface IUser {
     updatedAt: string;
     preferences: UserPreferences;
     onboarding: UserOnboarding;
+    role: UserRole;
 }
 
 export interface UserPreferences {
@@ -45,3 +46,5 @@ export interface OnboardingSection {
     section: string;
     shown: boolean;
 }
+
+export type UserRole = 'user' | 'admin';

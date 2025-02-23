@@ -65,7 +65,8 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
                 profileImage: user.profileImage,
                 accountsOrder: user.accountsOrder,
                 preferences: user.preferences,
-                onboarding: user.onboarding
+                onboarding: user.onboarding,
+                role: user.role
             },
             statusCode: 200
         });
