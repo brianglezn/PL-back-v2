@@ -56,7 +56,19 @@ export const authMiddleware = (
         next();
     } catch (error) {
         console.error('❌ Error in auth middleware:', error);
-        // Handle specific JWT errors
+        
+        // Handle token expiration specifically
+        if (error instanceof jwt.TokenExpiredError) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication token expired',
+                error: 'TOKEN_EXPIRED',
+                expiredAt: error.expiredAt
+            });
+            return;
+        }
+        
+        // Handle other JWT errors
         if (error instanceof jwt.JsonWebTokenError) {
             res.status(401).json({
                 success: false,
