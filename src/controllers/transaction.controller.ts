@@ -5,12 +5,13 @@ import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ITransaction, RecurrenceType } from '../types/models/ITransaction';
 import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
+import { encryptAmount, decryptTransactionsAmounts } from '../utils/transactionEncryption';
 
 // MongoDB transactions collection
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
 /**
- * Retrieve all transactions for the authenticated user.
+ * Retrieve all transactions associated with the authenticated user.
  */
 export const getAllTransactions = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -27,7 +28,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Retrieve transactions from the database
+        // Fetch transactions from the database
         const transactions = await transactionsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -57,10 +58,13 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             { $sort: { date: -1 } }
         ]).toArray();
 
-        // Send the retrieved transactions as a response
+        // Decrypt the amount field for all transactions
+        const decryptedTransactions = decryptTransactionsAmounts(transactions);
+
+        // Send the retrieved transactions in the response
         res.status(200).json({
             success: true,
-            data: transactions
+            data: decryptedTransactions
         });
     } catch (error) {
         console.error('❌ Error getting transactions:', error);
@@ -92,7 +96,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             return;
         }
 
-        // Retrieve transactions from the database filtered by year
+        // Fetch transactions from the database filtered by year
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -121,10 +125,13 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             }
         ]).toArray();
 
-        // Send the retrieved transactions as a response
+        // Decrypt the amount field for all transactions
+        const decryptedTransactions = decryptTransactionsAmounts(transactions);
+
+        // Send the retrieved transactions in the response
         res.status(200).json({
             success: true,
-            data: transactions,
+            data: decryptedTransactions,
             statusCode: 200
         });
     } catch (error) {
@@ -139,7 +146,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
 };
 
 /**
- * Retrieve transactions for the authenticated user filtered by year and month.
+ * Retrieve transactions for the authenticated user filtered by both year and month.
  */
 export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -159,7 +166,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
 
         const monthRegex = month ? `-${month}` : '';
 
-        // Retrieve transactions from the database filtered by year and month
+        // Fetch transactions from the database filtered by year and month
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -199,10 +206,13 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             { $sort: { date: -1 } }
         ]).toArray();
 
-        // Send the retrieved transactions as a response
+        // Decrypt the amount field for all transactions
+        const decryptedTransactions = decryptTransactionsAmounts(transactions);
+
+        // Send the retrieved transactions in the response
         res.status(200).json({
             success: true,
-            data: transactions,
+            data: decryptedTransactions,
             statusCode: 200
         });
     } catch (error) {
@@ -216,7 +226,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
     }
 };
 
-// Helper function to generate recurrent dates based on the recurrence type
+// Helper function to generate recurrent dates based on the specified recurrence type
 const generateRecurrentDates = (
     startDate: Date,
     endDate: Date,
@@ -249,12 +259,11 @@ const generateRecurrentDates = (
 };
 
 /**
- * Validates the transaction data to ensure all required fields are correct.
+ * Validate the transaction data to ensure all required fields are correct.
  */
 const validateTransactionData = (data: Partial<ITransaction>): { isValid: boolean; error?: { message: string; code: string; } } => {
     if (data.amount !== undefined && typeof data.amount !== 'number') {
         return {
-
             isValid: false,
             error: {
                 message: 'Amount must be a number',
@@ -391,6 +400,9 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Encrypt the amount before storing it
+        const encryptedAmount = encryptAmount(amount);
+
         if (isRecurrent) {
             const startDate = new Date(date);
             const endDate = new Date(recurrenceEndDate);
@@ -413,7 +425,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
                 user_id: new ObjectId(userId),
                 date: date.toISOString(),
                 description: description.trim(),
-                amount,
+                amount: encryptedAmount, // Store the encrypted amount
                 category: new ObjectId(category),
                 createdAt: getCurrentUTCDate(),
                 updatedAt: getCurrentUTCDate(),
@@ -436,7 +448,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
                 user_id: new ObjectId(userId),
                 date: toUTCDate(date),
                 description: description.trim(),
-                amount,
+                amount: encryptedAmount, // Store the encrypted amount
                 category: new ObjectId(category),
                 createdAt: getCurrentUTCDate(),
                 updatedAt: getCurrentUTCDate(),
@@ -445,10 +457,17 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
 
             const result = await transactionsCollection.insertOne(baseTransaction);
 
+            // Decrypt the amount for the response
+            const responseTransaction = {
+                ...baseTransaction,
+                _id: result.insertedId,
+                amount: amount // Return the original amount
+            };
+
             res.status(201).json({
                 success: true,
                 message: 'Transaction created successfully',
-                data: { ...baseTransaction, _id: result.insertedId },
+                data: responseTransaction,
                 statusCode: 201
             });
         }
@@ -470,7 +489,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
     try {
         const { userId } = req.user;
         const { id } = req.params;
-        const { updateAll, category, date, ...updateData } = req.body;
+        const { updateAll, category, date, amount, ...updateData } = req.body;
 
         // Validate the date format if provided
         if (date && !DATE_REGEX.test(date)) {
@@ -483,10 +502,12 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Prepare the final update data, encrypting the amount if provided
         const finalUpdateData = {
             ...updateData,
             ...(category && { category: new ObjectId(category) }),
             ...(date && { date: toUTCDate(date) }),
+            ...(amount !== undefined && { amount: encryptAmount(amount) }),
             updatedAt: getCurrentUTCDate()
         };
 
@@ -581,6 +602,7 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
+        // Determine the delete query based on whether to delete all recurrent transactions
         const deleteQuery = deleteAll && transaction.recurrenceId
             ? { 
                 recurrenceId: transaction.recurrenceId,

@@ -5,7 +5,7 @@ export interface ITransaction {
     user_id: ObjectId;
     date: string;
     description: string;
-    amount: number;
+    amount: string;
     category: ObjectId;
     createdAt: string;
     updatedAt: string;
@@ -14,6 +14,6 @@ export interface ITransaction {
     recurrenceEndDate?: string;
     recurrenceId?: string;
     isOriginalRecurrence?: boolean;
-}   
+}
 
 export type RecurrenceType = 'weekly' | 'monthly' | 'yearly' | null;
