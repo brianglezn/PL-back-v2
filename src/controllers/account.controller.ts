@@ -5,10 +5,10 @@ import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { IAccount, IYearRecord, YearRecord } from '../types/models/IAccount';
 import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
-import { decryptNumber, encryptText } from '../utils/encryption';
+import { createEncryptedYearRecord, decryptAccountRecords, encryptYearRecord } from '../utils/accountEncryption';
 
 // MongoDB accounts collection
-const accountsCollection = client.db(process.env.DB_NAME).collection('accounts');
+const accountsCollection = client.db(process.env.DB_NAME).collection<IAccount>('accounts');
 
 /**
  * Retrieve all accounts associated with the authenticated user.
@@ -22,10 +22,7 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             ...account,
             _id: account._id.toString(),
             user_id: account.user_id.toString(),
-            records: Object.entries(account.records).reduce((acc, [year, yearRecord]) => ({
-                ...acc,
-                [year]: decryptYearRecord(yearRecord as IYearRecord)
-            }), {})
+            records: decryptAccountRecords(account)
         }));
 
         res.status(200).json({
@@ -85,7 +82,7 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
 
         const decryptedAccounts = accounts.map(account => ({
             ...account,
-            records: decryptYearRecord(account.records as IYearRecord)
+            records: decryptAccountRecords(account as IAccount)
         }));
 
         res.status(200).json({
@@ -159,10 +156,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         const decryptedAccount = {
             ...newAccount,
             _id: result.insertedId.toString(),
-            records: Object.entries(records).reduce((acc, [year, yearRecord]) => ({
-                ...acc,
-                [year]: decryptYearRecord(yearRecord)
-            }), {})
+            records: decryptAccountRecords(newAccount)
         };
 
         res.status(201).json({
@@ -210,21 +204,8 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         if (configuration !== undefined) updateData.configuration = configuration;
         if (records !== undefined) {
             const encryptedRecords: Record<string, IYearRecord> = {};
-            Object.entries(records as Record<string, IYearRecord>).forEach(([year, yearRecord]) => {
-                encryptedRecords[year] = {
-                    jan: encryptText(yearRecord.jan.toString()),
-                    feb: encryptText(yearRecord.feb.toString()),
-                    mar: encryptText(yearRecord.mar.toString()),
-                    apr: encryptText(yearRecord.apr.toString()),
-                    may: encryptText(yearRecord.may.toString()),
-                    jun: encryptText(yearRecord.jun.toString()),
-                    jul: encryptText(yearRecord.jul.toString()),
-                    aug: encryptText(yearRecord.aug.toString()),
-                    sep: encryptText(yearRecord.sep.toString()),
-                    oct: encryptText(yearRecord.oct.toString()),
-                    nov: encryptText(yearRecord.nov.toString()),
-                    dec: encryptText(yearRecord.dec.toString())
-                };
+            Object.entries(records).forEach(([year, yearRecord]) => {
+                encryptedRecords[year] = encryptYearRecord(yearRecord as YearRecord);
             });
             updateData.records = encryptedRecords;
         }
@@ -258,10 +239,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             ...result,
             _id: result._id.toString(),
             user_id: result.user_id.toString(),
-            records: Object.entries(result.records).reduce((acc, [year, yearRecord]) => ({
-                ...acc,
-                [year]: decryptYearRecord(yearRecord as IYearRecord)
-            }), {})
+            records: decryptAccountRecords(result)
         };
 
         res.status(200).json({
@@ -334,42 +312,3 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
-/**
- * Create an encrypted year record.
- */
-const createEncryptedYearRecord = (): IYearRecord => {
-    return {
-        jan: encryptText('0'),
-        feb: encryptText('0'),
-        mar: encryptText('0'),
-        apr: encryptText('0'),
-        may: encryptText('0'),
-        jun: encryptText('0'),
-        jul: encryptText('0'),
-        aug: encryptText('0'),
-        sep: encryptText('0'),
-        oct: encryptText('0'),
-        nov: encryptText('0'),
-        dec: encryptText('0')
-    };
-};
-
-/**
- * Decrypt a year record.
- */
-const decryptYearRecord = (yearRecord: IYearRecord): YearRecord => {
-    return {
-        jan: decryptNumber(yearRecord.jan),
-        feb: decryptNumber(yearRecord.feb),
-        mar: decryptNumber(yearRecord.mar),
-        apr: decryptNumber(yearRecord.apr),
-        may: decryptNumber(yearRecord.may),
-        jun: decryptNumber(yearRecord.jun),
-        jul: decryptNumber(yearRecord.jul),
-        aug: decryptNumber(yearRecord.aug),
-        sep: decryptNumber(yearRecord.sep),
-        oct: decryptNumber(yearRecord.oct),
-        nov: decryptNumber(yearRecord.nov),
-        dec: decryptNumber(yearRecord.dec)
-    };
-};

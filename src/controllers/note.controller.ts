@@ -5,10 +5,10 @@ import { client } from '../config/database';
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { INote } from '../types/models/INote';
 import { getCurrentUTCDate } from '../utils/dateUtils';
-import { encryptText, decryptText } from '../utils/encryption';
+import { encryptNote, decryptNote, decryptNotes } from '../utils/noteEncryption';
 
 // MongoDB notes collection
-const notesCollection = client.db(process.env.DB_NAME).collection('notes');
+const notesCollection = client.db(process.env.DB_NAME).collection<INote>('notes');
 
 /**
  * Retrieve all notes for the authenticated user.
@@ -28,11 +28,7 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
         }
 
         const notes = await notesCollection.find({ user_id: new ObjectId(userId) }).toArray();
-        const decryptedNotes = notes.map(note => ({
-            ...note,
-            title: note.title ? decryptText(note.title) : 'Untitled',
-            content: note.content ? decryptText(note.content) : ''
-        }));
+        const decryptedNotes = decryptNotes(notes);
 
         res.status(200).json({
             success: true,
@@ -69,15 +65,15 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        const newNote: INote = {
+        const newNote = encryptNote({
             user_id: new ObjectId(userId),
-            title: title ? encryptText(title) : encryptText('New Note'),
-            content: content ? encryptText(content) : '',
+            title,
+            content,
             createdAt: getCurrentUTCDate(),
             updatedAt: getCurrentUTCDate()
-        };
+        });
 
-        const result = await notesCollection.insertOne(newNote);
+        const result = await notesCollection.insertOne(newNote as INote);
         const insertedNote = await notesCollection.findOne({ _id: result.insertedId });
 
         if (!insertedNote) {
@@ -90,12 +86,7 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        // Decrypt for response
-        const decryptedNote = {
-            ...insertedNote,
-            title: decryptText(insertedNote.title),
-            content: insertedNote.content ? decryptText(insertedNote.content) : ''
-        };
+        const decryptedNote = decryptNote(insertedNote);
 
         res.status(201).json({
             success: true,
@@ -149,9 +140,11 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        // Encrypt title and content
-        const encryptedTitle = title ? encryptText(title) : '';
-        const encryptedContent = content ? encryptText(content) : '';
+        const encryptedNote = encryptNote({
+            title,
+            content,
+            updatedAt: getCurrentUTCDate()
+        });
 
         // Update the note
         const updateResult = await notesCollection.updateOne(
@@ -159,13 +152,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
                 _id: new ObjectId(id),
                 user_id: new ObjectId(userId)
             },
-            {
-                $set: {
-                    title: encryptedTitle || encryptText('Untitled'),
-                    content: encryptedContent,
-                    updatedAt: getCurrentUTCDate()
-                }
-            }
+            { $set: encryptedNote }
         );
 
         if (updateResult.modifiedCount === 0) {
@@ -195,12 +182,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        // Decrypt for response
-        const decryptedNote = {
-            ...updatedNote,
-            title: decryptText(updatedNote.title),
-            content: updatedNote.content ? decryptText(updatedNote.content) : ''
-        };
+        const decryptedNote = decryptNote(updatedNote);
 
         res.status(200).json({
             success: true,
