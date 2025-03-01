@@ -15,7 +15,7 @@ import categoryRoutes from './routes/category.routes';
 import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
-
+import analyticsRoutes from './routes/analytics.routes';
 // Import services
 import { backupService } from './services/backup.service';
 
@@ -71,6 +71,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check endpoint
 app.get('/health', (_, res) => {
