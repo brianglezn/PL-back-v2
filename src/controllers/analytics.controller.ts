@@ -14,30 +14,30 @@ const transactionsCollection = db.collection('transactions');
 /**
  * Save current user metrics to history
  * This function should be called by a daily cron job at the end of each day or manually
- * @param isManualSave - Indicates if this is a manual save (true) or automated cron save (false)
+ * @param isManualSave - Indicates if this is a manual save (true) or an automated cron save (false)
  */
 export const saveUserMetricsHistory = async (isManualSave: boolean = false): Promise<boolean> => {
     try {
-        console.log(`🔄 Initiating user metrics save... (${isManualSave ? 'manual' : 'automated'} save)`);
+        console.log(`🔄 Starting user metrics save... (${isManualSave ? 'manual' : 'automated'} save)`);
 
         const now = getCurrentUTCDate();
         const startOfToday = new Date();
         startOfToday.setUTCHours(0, 0, 0, 0);
         const startOfTodayUTC = toUTCDate(startOfToday);
 
-        // Determine the start of the week (Monday) in UTC
+        // Calculate the start of the week (Monday) in UTC
         const startOfWeek = new Date();
         startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay() + (startOfWeek.getUTCDay() === 0 ? -6 : 1));
         startOfWeek.setUTCHours(0, 0, 0, 0);
         const startOfWeekUTC = toUTCDate(startOfWeek);
 
-        // Determine the start of the month in UTC
+        // Calculate the start of the month in UTC
         const startOfMonth = new Date();
         startOfMonth.setUTCDate(1);
         startOfMonth.setUTCHours(0, 0, 0, 0);
         const startOfMonthUTC = toUTCDate(startOfMonth);
 
-        console.log('📅 Periods calculated:', {
+        console.log('📅 Calculated periods:', {
             today: startOfTodayUTC,
             week: startOfWeekUTC,
             month: startOfMonthUTC
@@ -92,7 +92,7 @@ export const saveUserMetricsHistory = async (isManualSave: boolean = false): Pro
         console.log('✅ User metrics successfully saved for:', metricsData.date);
         return true;
     } catch (error) {
-        console.error('❌ Error occurred while saving user metrics:', error);
+        console.error('❌ An error occurred while saving user metrics:', error);
         throw error; // Rethrow the error to be captured by the cron job
     }
 };
@@ -296,16 +296,27 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
 
         res.status(200).json({
             success: true,
-            message: 'User metrics successfully retrieved',
-            data: metrics
+            message: 'User metrics retrieved successfully',
+            data: metrics,
+            metadata: {
+                lastUpdated: now
+            }
         });
 
     } catch (error) {
         console.error('Error occurred while retrieving user metrics:', error);
+        
+        // Determine the type of error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isDbError = errorMessage.toLowerCase().includes('database') || 
+                          errorMessage.toLowerCase().includes('mongo') ||
+                          errorMessage.toLowerCase().includes('db');
+        
         res.status(500).json({
             success: false,
             message: 'Error occurred while retrieving user metrics',
-            error: 'SERVER_ERROR'
+            error: isDbError ? 'DATABASE_ERROR' : 'ANALYTICS_PROCESSING_ERROR',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
         });
     }
 };
@@ -417,16 +428,27 @@ export const getTransactionMetrics = async (req: Request, res: Response): Promis
 
         res.status(200).json({
             success: true,
-            message: 'Transaction metrics successfully retrieved',
-            data: metrics
+            message: 'Transaction metrics retrieved successfully',
+            data: metrics,
+            metadata: {
+                lastUpdated: now
+            }
         });
 
     } catch (error) {
         console.error('Error occurred while retrieving transaction metrics:', error);
+        
+        // Determine the type of error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isDbError = errorMessage.toLowerCase().includes('database') || 
+                          errorMessage.toLowerCase().includes('mongo') ||
+                          errorMessage.toLowerCase().includes('db');
+        
         res.status(500).json({
             success: false,
             message: 'Error occurred while retrieving transaction metrics',
-            error: 'SERVER_ERROR'
+            error: isDbError ? 'DATABASE_ERROR' : 'ANALYTICS_PROCESSING_ERROR',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
         });
     }
 };
@@ -437,6 +459,16 @@ export const getTransactionMetrics = async (req: Request, res: Response): Promis
 export const getTransactionHistory = async (req: Request, res: Response): Promise<void> => {
     try {
         const { type = 'monthly' } = req.query;
+
+        // Validate the requested history type
+        if (type !== 'daily' && type !== 'monthly') {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid history type. It must be "daily" or "monthly"',
+                error: 'INVALID_DATE_RANGE'
+            });
+            return;
+        }
 
         const now = getCurrentUTCDate();
         let startDate: Date;
@@ -514,16 +546,34 @@ export const getTransactionHistory = async (req: Request, res: Response): Promis
 
         res.status(200).json({
             success: true,
-            message: 'Transaction history successfully retrieved',
-            data: formattedHistory
+            message: 'Transaction history retrieved successfully',
+            data: formattedHistory,
+            metadata: {
+                lastUpdated: now,
+                type
+            }
         });
 
     } catch (error) {
         console.error('Error occurred while retrieving transaction history:', error);
+        
+        // Determine the type of error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isDbError = errorMessage.toLowerCase().includes('database') || 
+                          errorMessage.toLowerCase().includes('mongo') ||
+                          errorMessage.toLowerCase().includes('db');
+        const isDateError = errorMessage.toLowerCase().includes('date') || 
+                           errorMessage.toLowerCase().includes('time');
+        
+        let errorType = 'ANALYTICS_PROCESSING_ERROR';
+        if (isDbError) errorType = 'DATABASE_ERROR';
+        else if (isDateError) errorType = 'INVALID_DATE_RANGE';
+        
         res.status(500).json({
             success: false,
             message: 'Error occurred while retrieving transaction history',
-            error: 'SERVER_ERROR'
+            error: errorType,
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
         });
     }
 };
@@ -532,16 +582,21 @@ export const getTransactionHistory = async (req: Request, res: Response): Promis
  * Helper function to calculate retention rate
  */
 const calculateRetentionRate = async (collection: any, startDate: string): Promise<number> => {
-    const totalUsersInPeriod = await collection.countDocuments({
-        createdAt: { $lte: startDate }
-    });
+    try {
+        const totalUsersInPeriod = await collection.countDocuments({
+            createdAt: { $lte: startDate }
+        });
 
-    const activeUsersInPeriod = await collection.countDocuments({
-        createdAt: { $lte: startDate },
-        lastLogin: { $gte: startDate }
-    });
+        const activeUsersInPeriod = await collection.countDocuments({
+            createdAt: { $lte: startDate },
+            lastLogin: { $gte: startDate }
+        });
 
-    return totalUsersInPeriod > 0
-        ? (activeUsersInPeriod / totalUsersInPeriod) * 100
-        : 0;
+        return totalUsersInPeriod > 0
+            ? (activeUsersInPeriod / totalUsersInPeriod) * 100
+            : 0;
+    } catch (error) {
+        console.error('Error occurred while calculating retention rate:', error);
+        throw new Error(`Error occurred while calculating retention rate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 };

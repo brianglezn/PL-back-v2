@@ -44,16 +44,25 @@ router.post('/users/save-metrics', authMiddleware, isAdmin, (req, res) => {
             const success = await runAnalyticsJobManually();
             res.status(success ? 200 : 500).json({
                 success,
-                message: success 
-                    ? 'User metrics have been successfully saved' 
-                    : 'Error saving user metrics'
+                message: success
+                    ? 'User metrics have been successfully saved'
+                    : 'Error saving user metrics',
+                error: success ? undefined : 'METRICS_SAVE_ERROR'
             });
         } catch (error) {
             console.error('Error occurred while saving user metrics:', error);
+
+            // Determinar el tipo de error
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            const isDbError = errorMessage.toLowerCase().includes('database') ||
+                errorMessage.toLowerCase().includes('mongo') ||
+                errorMessage.toLowerCase().includes('db');
+
             res.status(500).json({
                 success: false,
                 message: 'Error saving user metrics',
-                error: 'SERVER_ERROR'
+                error: isDbError ? 'DATABASE_ERROR' : 'METRICS_SAVE_ERROR',
+                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
             });
         }
     })();
