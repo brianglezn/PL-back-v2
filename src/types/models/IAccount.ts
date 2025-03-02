@@ -1,13 +1,18 @@
 import { ObjectId } from 'mongodb';
+import { ISODateString } from '../../utils/dateUtils';
 
+/**
+ * Interface representing an account in the system.
+ * All date fields use ISO UTC format (YYYY-MM-DDTHH:mm:ss.sssZ).
+ */
 export interface IAccount {
     _id?: ObjectId;
     user_id: ObjectId;
     accountName: string;
     records: Record<string, IYearRecord>;
     configuration: IAccountConfiguration;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: ISODateString;
+    updatedAt: ISODateString;
 }
 
 export interface IYearRecord {

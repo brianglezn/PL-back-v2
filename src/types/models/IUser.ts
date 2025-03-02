@@ -1,5 +1,10 @@
 import { ObjectId } from 'mongodb';
+import { ISODateString } from '../../utils/dateUtils';
 
+/**
+ * Interface representing a user in the system.
+ * All date fields use ISO UTC format (YYYY-MM-DDTHH:mm:ss.sssZ).
+ */
 export interface IUser {
     _id?: ObjectId;
     username: string;
@@ -9,18 +14,21 @@ export interface IUser {
     surname: string;
     googleId?: string;
     resetToken?: string;
-    resetTokenExpiry?: string;
+    resetTokenExpiry?: ISODateString;
     profileImage?: string;
     profileImagePublicId?: string;
     accountsOrder: string[];
-    lastLogin: string;
-    createdAt: string;
-    updatedAt: string;
+    lastLogin: ISODateString;
+    createdAt: ISODateString;
+    updatedAt: ISODateString;
     preferences: UserPreferences;
     onboarding: UserOnboarding;
     role: UserRole;
 }
 
+/**
+ * User preferences for application settings.
+ */
 export interface UserPreferences {
     language: Language;
     currency: Currency;
@@ -37,6 +45,9 @@ export type TimeFormat = '12h' | '24h';
 export type Theme = 'light' | 'dark';
 export type ViewMode = 'yearToday' | 'fullYear';
 
+/**
+ * User onboarding status and progress.
+ */
 export interface UserOnboarding {
     completed: boolean;
     sections: OnboardingSection[];
