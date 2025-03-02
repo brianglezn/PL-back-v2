@@ -2,12 +2,13 @@ import { Router } from 'express';
 import analyticsController from '../controllers/analytics.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { isAdmin } from '../middlewares/admin.middleware';
+import { runAnalyticsJobManually } from '../services/analytics.cron';
 
 const router = Router();
 
 /**
  * @route   GET /api/analytics/users
- * @desc    Get user metrics
+ * @desc    Retrieve user metrics
  * @access  Admin
  */
 router.get('/users', authMiddleware, isAdmin, (req, res) => {
@@ -16,7 +17,7 @@ router.get('/users', authMiddleware, isAdmin, (req, res) => {
 
 /**
  * @route   GET /api/analytics/transactions
- * @desc    Get transaction metrics
+ * @desc    Retrieve transaction metrics
  * @access  Admin
  */
 router.get('/transactions', authMiddleware, isAdmin, (req, res) => {
@@ -25,7 +26,7 @@ router.get('/transactions', authMiddleware, isAdmin, (req, res) => {
 
 /**
  * @route   GET /api/analytics/transactions/history
- * @desc    Get transaction history
+ * @desc    Retrieve transaction history
  * @access  Admin
  */
 router.get('/transactions/history', authMiddleware, isAdmin, (req, res) => {
@@ -40,16 +41,18 @@ router.get('/transactions/history', authMiddleware, isAdmin, (req, res) => {
 router.post('/users/save-metrics', authMiddleware, isAdmin, (req, res) => {
     void (async () => {
         try {
-            await analyticsController.saveUserMetricsHistory();
-            res.status(200).json({
-                success: true,
-                message: 'User metrics saved successfully'
+            const success = await runAnalyticsJobManually();
+            res.status(success ? 200 : 500).json({
+                success,
+                message: success 
+                    ? 'User metrics have been saved successfully' 
+                    : 'Failed to save user metrics'
             });
         } catch (error) {
-            console.error('Error saving user metrics:', error);
+            console.error('An error occurred while saving user metrics:', error);
             res.status(500).json({
                 success: false,
-                message: 'Error saving user metrics',
+                message: 'Failed to save user metrics',
                 error: 'SERVER_ERROR'
             });
         }

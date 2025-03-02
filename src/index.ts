@@ -18,6 +18,7 @@ import transactionRoutes from './routes/transaction.routes';
 import analyticsRoutes from './routes/analytics.routes';
 // Import services
 import { backupService } from './services/backup.service';
+import { initAnalyticsCron } from './services/analytics.cron';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -39,7 +40,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error('CORS policy: Not allowed by CORS'));
         }
     },
     credentials: true,
@@ -99,11 +100,15 @@ app.post('/api/backup', async (req, res) => {
 async function initializeServer() {
     try {
         await connectDB();
+        
+        // Initialize the analytics cron job after connecting to the database
+        initAnalyticsCron();
+        
         app.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`🚀 Server is running on port ${PORT}`);
         });
     } catch (error) {
-        console.error('❌ Failed to initialize server:', error);
+        console.error('❌ Server initialization failed:', error);
         process.exit(1);
     }
 }

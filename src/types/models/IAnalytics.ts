@@ -47,7 +47,7 @@ export interface ITransactionMetrics {
 }
 
 export interface ITransactionHistory {
-    date: Date;
+    date: ISODateString;
     count: number;
 }
 

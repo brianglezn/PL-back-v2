@@ -3,10 +3,10 @@ import { client } from '../config/database';
 import { toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
 
 // Interfaces
-import { IUserMetrics, ITransactionMetrics, ITransactionHistory } from '../types/models/IAnalytics';
+import { IUserMetrics, ITransactionMetrics, ITransactionHistory, ISODateString } from '../types/models/IAnalytics';
 
 interface IUserMetricsHistory {
-    date: Date;
+    date: ISODateString;
     dailyActive: number;
     weeklyActive: number;
     monthlyActive: number;
@@ -15,10 +15,12 @@ interface IUserMetricsHistory {
 class AnalyticsController {
     /**
      * Save current user metrics to history
-     * This should be called by a daily cron job at the end of each day
+     * This function should be called by a daily cron job at the end of each day
      */
     async saveUserMetricsHistory() {
         try {
+            console.log('🔄 Starting to save user metrics...');
+            
             const db = client.db(process.env.DB_NAME);
             const usersCollection = db.collection('users');
             const userMetricsHistoryCollection = db.collection('userMetricsHistory');
@@ -28,17 +30,23 @@ class AnalyticsController {
             startOfToday.setUTCHours(0, 0, 0, 0);
             const startOfTodayUTC = toUTCDate(startOfToday);
 
-            // Get start of week (Monday) in UTC
+            // Get the start of the week (Monday) in UTC
             const startOfWeek = new Date();
             startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay() + (startOfWeek.getUTCDay() === 0 ? -6 : 1));
             startOfWeek.setUTCHours(0, 0, 0, 0);
             const startOfWeekUTC = toUTCDate(startOfWeek);
 
-            // Get start of month in UTC
+            // Get the start of the month in UTC
             const startOfMonth = new Date();
             startOfMonth.setUTCDate(1);
             startOfMonth.setUTCHours(0, 0, 0, 0);
             const startOfMonthUTC = toUTCDate(startOfMonth);
+
+            console.log('📅 Calculated periods:', {
+                today: startOfTodayUTC,
+                week: startOfWeekUTC,
+                month: startOfMonthUTC
+            });
 
             // Calculate active users for the day
             const dailyActive = await usersCollection.countDocuments({
@@ -62,6 +70,12 @@ class AnalyticsController {
                 }
             });
 
+            console.log('👥 Calculated active users:', {
+                daily: dailyActive,
+                weekly: weeklyActive,
+                monthly: monthlyActive
+            });
+
             // Save metrics to history
             await userMetricsHistoryCollection.insertOne({
                 date: startOfTodayUTC,
@@ -70,14 +84,15 @@ class AnalyticsController {
                 monthlyActive
             });
 
-            console.log('User metrics history saved successfully for:', startOfTodayUTC);
+            console.log('✅ User metrics successfully saved for:', startOfTodayUTC);
         } catch (error) {
-            console.error('Error saving user metrics history:', error);
+            console.error('❌ Error saving user metrics:', error);
+            throw error; // Rethrow the error to be captured by the cron job
         }
     }
 
     /**
-     * Get user metrics including active users, new users and retention
+     * Get user metrics including active users, new users, and retention
      */
     async getUserMetrics(req: Request, res: Response) {
         try {
@@ -87,18 +102,18 @@ class AnalyticsController {
 
             const now = getCurrentUTCDate();
 
-            // Get start of today in UTC
+            // Get the start of today in UTC
             const startOfToday = new Date();
             startOfToday.setUTCHours(0, 0, 0, 0);
             const startOfTodayUTC = toUTCDate(startOfToday);
 
-            // Get start of current week (Monday) in UTC
+            // Get the start of the current week (Monday) in UTC
             const startOfWeek = new Date();
             startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay() + (startOfWeek.getUTCDay() === 0 ? -6 : 1));
             startOfWeek.setUTCHours(0, 0, 0, 0);
             const startOfWeekUTC = toUTCDate(startOfWeek);
 
-            // Get start of month in UTC
+            // Get the start of the month in UTC
             const startOfMonth = new Date();
             startOfMonth.setUTCDate(1);
             startOfMonth.setUTCHours(0, 0, 0, 0);
@@ -238,7 +253,7 @@ class AnalyticsController {
             });
 
         } catch (error) {
-            console.error('Error getting user metrics:', error);
+            console.error('Error retrieving user metrics:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error retrieving user metrics',
@@ -258,31 +273,31 @@ class AnalyticsController {
 
             const now = getCurrentUTCDate();
 
-            // Get start of today in UTC
+            // Get the start of today in UTC
             const startOfToday = new Date();
             startOfToday.setUTCHours(0, 0, 0, 0);
             const startOfTodayUTC = toUTCDate(startOfToday);
 
-            // Get start of month in UTC
+            // Get the start of the month in UTC
             const startOfMonth = new Date();
             startOfMonth.setUTCDate(1);
             startOfMonth.setUTCHours(0, 0, 0, 0);
             const startOfMonthUTC = toUTCDate(startOfMonth);
 
-            // Get end of month in UTC
+            // Get the end of the month in UTC
             const endOfMonth = new Date();
             endOfMonth.setMonth(endOfMonth.getMonth() + 1);
             endOfMonth.setUTCDate(1);
             endOfMonth.setUTCHours(0, 0, 0, 0);
             const endOfMonthUTC = toUTCDate(endOfMonth);
 
-            // Get start of previous month in UTC
+            // Get the start of the previous month in UTC
             const startOfPrevMonth = new Date();
             startOfPrevMonth.setMonth(startOfPrevMonth.getMonth() - 1, 1);
             startOfPrevMonth.setUTCHours(0, 0, 0, 0);
             const startOfPrevMonthUTC = toUTCDate(startOfPrevMonth);
 
-            // Get end of previous month in UTC (which is start of current month)
+            // Get the end of the previous month in UTC (which is the start of the current month)
             const endOfPrevMonthUTC = startOfMonthUTC;
 
             // Get total transactions
@@ -312,7 +327,7 @@ class AnalyticsController {
                 }
             });
 
-            // Obtener ejemplos de transacciones para verificar
+            // Get sample transactions for verification
             const sampleThisMonth = await transactionsCollection.find({
                 date: {
                     $gte: startOfMonthUTC,
@@ -363,7 +378,7 @@ class AnalyticsController {
             });
 
         } catch (error) {
-            console.error('Error getting transaction metrics:', error);
+            console.error('Error retrieving transaction metrics:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error retrieving transaction metrics',
@@ -444,7 +459,7 @@ class AnalyticsController {
                 const existingData = history.find(h => h._id === dateStr);
 
                 formattedHistory.push({
-                    date: new Date(currentDate),
+                    date: toUTCDate(currentDate),
                     count: existingData ? existingData.count : 0
                 });
 
@@ -462,7 +477,7 @@ class AnalyticsController {
             });
 
         } catch (error) {
-            console.error('Error getting transaction history:', error);
+            console.error('Error retrieving transaction history:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error retrieving transaction history',
