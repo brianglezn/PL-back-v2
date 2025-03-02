@@ -3,10 +3,18 @@ import { ObjectId } from 'mongodb';
 import bcrypt from 'bcrypt';
 import nodemailer from 'nodemailer';
 import type { UploadApiResponse } from 'cloudinary';
+
+// Database
 import { client } from '../config/database';
-import type { AuthRequest } from '../middlewares/auth.middleware';
+
+// Cloudinary
 import { cloudinary } from '../config/cloudinary';
+
+// Types
 import type { IUser } from '../types/models/IUser';
+import type { AuthRequest } from '../middlewares/auth.middleware';
+
+// Utils
 import { getAccountDeletionEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
@@ -28,7 +36,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
     try {
         const { userId } = req.user;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -39,10 +47,10 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Retrieve user data from the database
+        // Fetch user data from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) }) as IUser | null;
 
-        // Verify if the user exists
+        // Check if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -53,7 +61,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Send back the user data
+        // Respond with the user data
         res.status(200).json({
             success: true,
             data: {
@@ -71,7 +79,7 @@ export const getUserData = async (req: AuthRequest, res: Response): Promise<void
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving user data:', error);
+        console.error('❌ Error while retrieving user data:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -89,7 +97,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
         const { userId } = req.user;
         const { viewMode, name, surname, language, currency, dateFormat, timeFormat } = req.body;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -100,10 +108,10 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Retrieve user data from the database
+        // Fetch user data from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Verify if the user exists
+        // Check if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -128,15 +136,15 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             updatedAt: getCurrentUTCDate()
         };
 
-        // Process the profile image update if a new file is provided
+        // Handle profile image update if a new file is provided
         if (req.file) {
             try {
-                // Remove the old profile image if it exists
+                // Delete the old profile image if it exists
                 if (user.profileImagePublicId) {
                     try {
                         await cloudinary.uploader.destroy(user.profileImagePublicId);
                     } catch (cloudinaryError) {
-                        console.error('❌ Error deleting old image from Cloudinary:', cloudinaryError);
+                        console.error('❌ Error while deleting old image from Cloudinary:', cloudinaryError);
                     }
                 }
 
@@ -159,7 +167,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
                 updateData.profileImage = result.secure_url;
                 updateData.profileImagePublicId = result.public_id;
             } catch (error) {
-                console.error('❌ Error uploading image:', error);
+                console.error('❌ Error while uploading image:', error);
                 res.status(500).json({
                     success: false,
                     message: 'Error uploading profile image',
@@ -176,7 +184,7 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             { $set: updateData }
         );
 
-        // Verify if the user exists
+        // Check if the user exists
         if (result.matchedCount === 0) {
             res.status(404).json({
                 success: false,
@@ -198,14 +206,14 @@ export const updateUserProfile = async (req: MulterRequest, res: Response): Prom
             return;
         }
 
-        // Send back a success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating user profile:', error);
+        console.error('❌ Error while updating user profile:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -256,10 +264,10 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
-        // Retrieve the updated user data
+        // Fetch the updated user data
         const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Send back the updated user data
+        // Respond with the updated user data
         res.status(200).json({
             success: true,
             data: updatedUser,
@@ -267,7 +275,7 @@ export const updateUserTheme = async (req: AuthRequest, res: Response): Promise<
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating theme:', error);
+        console.error('❌ Error while updating theme:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -318,10 +326,10 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Retrieve the updated user data
+        // Fetch the updated user data
         const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Send back the updated user data
+        // Respond with the updated user data
         res.status(200).json({
             success: true,
             data: updatedUser,
@@ -329,7 +337,7 @@ export const updateUserViewMode = async (req: AuthRequest, res: Response): Promi
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating view mode:', error);
+        console.error('❌ Error while updating view mode:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -370,7 +378,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Retrieve the user from the database
+        // Fetch the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
         if (!user) {
             res.status(404).json({
@@ -427,14 +435,14 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
             html: getPasswordChangeEmailTemplate(user.name, user.language)
         });
 
-        // Send back a success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'Password changed successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error changing password:', error);
+        console.error('❌ Error while changing password:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -451,7 +459,7 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
     try {
         const { userId } = req.user;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -462,10 +470,10 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Retrieve the user from the database
+        // Fetch the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Verify if the user exists
+        // Check if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -481,7 +489,7 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             try {
                 await cloudinary.uploader.destroy(user.profileImagePublicId);
             } catch (cloudinaryError) {
-                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
+                console.error('❌ Error while deleting image from Cloudinary:', cloudinaryError);
             }
         }
 
@@ -494,14 +502,14 @@ export const deleteProfileImage = async (req: AuthRequest, res: Response): Promi
             }
         );
 
-        // Send back a success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'Profile image deleted successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting profile image:', error);
+        console.error('❌ Error while deleting profile image:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -518,7 +526,7 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
     try {
         const { userId } = req.user;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -529,10 +537,10 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Retrieve the user from the database
+        // Fetch the user from the database
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-        // Verify if the user exists
+        // Check if the user exists
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -548,7 +556,7 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
             try {
                 await cloudinary.uploader.destroy(user.profileImagePublicId);
             } catch (cloudinaryError) {
-                console.error('❌ Error deleting image from Cloudinary:', cloudinaryError);
+                console.error('❌ Error while deleting image from Cloudinary:', cloudinaryError);
             }
         }
 
@@ -591,14 +599,14 @@ export const deleteUserAccount = async (req: AuthRequest, res: Response): Promis
         // Clear the token cookie
         res.clearCookie('token');
 
-        // Send back a success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'User account and all related data deleted successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting user account:', error);
+        console.error('❌ Error while deleting user account:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -616,7 +624,7 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
         const { userId } = req.user;
         const { accountsOrder } = req.body;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -660,14 +668,14 @@ export const updateAccountsOrder = async (req: AuthRequest, res: Response): Prom
             return;
         }
 
-        // Send back a success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'Accounts order updated successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating accounts order:', error);
+        console.error('❌ Error while updating accounts order:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -684,7 +692,8 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
     try {
         const { userId } = req.user;
         const preferences = req.body;
-        // Validate the format of the user ID
+
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -694,6 +703,7 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
             });
             return;
         }
+
         // Update the user's preferences in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
@@ -704,6 +714,7 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
                 }
             }
         );
+
         // Check if the update was successful
         if (result.modifiedCount === 0) {
             res.status(404).json({
@@ -714,6 +725,7 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
             });
             return;
         }
+
         // Respond with a success message
         res.status(200).json({
             success: true,
@@ -721,7 +733,7 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating user preferences:', error);
+        console.error('❌ Error while updating user preferences:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -737,7 +749,8 @@ export const onboardingPreferences = async (req: AuthRequest, res: Response): Pr
 export const completeOnboarding = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userId } = req.user;
-        // Validate the format of the user ID
+
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -747,6 +760,7 @@ export const completeOnboarding = async (req: AuthRequest, res: Response): Promi
             });
             return;
         }
+
         // Mark the onboarding process as completed in the database
         const result = await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
@@ -757,6 +771,7 @@ export const completeOnboarding = async (req: AuthRequest, res: Response): Promi
                 }
             }
         );
+
         // Check if the update was successful
         if (result.modifiedCount === 0) {
             res.status(404).json({
@@ -774,7 +789,7 @@ export const completeOnboarding = async (req: AuthRequest, res: Response): Promi
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error completing onboarding:', error);
+        console.error('❌ Error while completing onboarding:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -792,7 +807,7 @@ export const updateOnboardingSection = async (req: AuthRequest, res: Response): 
         const { userId } = req.user;
         const { section } = req.body;
 
-        // Validate the format of the user ID
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -819,14 +834,14 @@ export const updateOnboardingSection = async (req: AuthRequest, res: Response): 
             }
         );
 
-        // Respond with success message
+        // Respond with a success message
         res.status(200).json({
             success: true,
             message: 'Onboarding section updated successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating onboarding section:', error);
+        console.error('❌ Error while updating onboarding section:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

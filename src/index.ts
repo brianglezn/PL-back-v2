@@ -17,7 +17,7 @@ import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
 import analyticsRoutes from './routes/analytics.routes';
 // Import services
-import { backupService } from './services/backup.service';
+import { startScheduledBackups, executeManualBackup } from './services/backup.service';
 import { initAnalyticsCron } from './services/analytics.cron';
 
 // Load environment variables from .env file
@@ -40,7 +40,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error('CORS policy: Not allowed by CORS'));
+            callback(new Error('CORS policy: Origin not allowed'));
         }
     },
     credentials: true,
@@ -79,13 +79,10 @@ app.get('/health', (_, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Start the scheduled backups service
-backupService.startScheduledBackups();
-
 // Manual backup endpoint
 app.post('/api/backup', async (req, res) => {
     try {
-        const result = await backupService.executeManualBackup();
+        const result = await executeManualBackup();
         res.status(result.success ? 200 : 500).json(result);
     } catch (error) {
         res.status(500).json({
@@ -100,15 +97,17 @@ app.post('/api/backup', async (req, res) => {
 async function initializeServer() {
     try {
         await connectDB();
-        
+
+        // Start the scheduled backups service
+        startScheduledBackups();
         // Initialize the analytics cron job after connecting to the database
         initAnalyticsCron();
-        
+
         app.listen(PORT, () => {
-            console.log(`🚀 Server is running on port ${PORT}`);
+            console.log(`🚀 Server is successfully running on port ${PORT}`);
         });
     } catch (error) {
-        console.error('❌ Server initialization failed:', error);
+        console.error('❌ Server initialization failed due to an error:', error);
         process.exit(1);
     }
 }

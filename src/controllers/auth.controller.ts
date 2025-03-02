@@ -4,8 +4,13 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
 
+// Database
 import { client } from '../config/database';
+
+// Types
 import { IUser } from '../types/models/IUser';
+
+// Utils
 import { getWelcomeEmailTemplate, getPasswordResetEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
@@ -181,9 +186,9 @@ export const register = async (req: RegisterRequest, res: Response) => {
             html: getWelcomeEmailTemplate(newUser.name, 'https://profit-lost.com/dashboard')
         }, (error, info) => {
             if (error) {
-                console.error('Error sending welcome email:', error);
+                console.error('Failed to send welcome email:', error);
             } else {
-                console.log('Welcome email sent:', info.messageId);
+                console.log('Welcome email successfully sent:', info.messageId);
             }
         });
 
@@ -202,7 +207,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
         });
 
     } catch (error) {
-        console.error('❌ Error in registration:', error);
+        console.error('❌ Registration error:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -223,7 +228,7 @@ export const login = async (req: LoginRequest, res: Response) => {
         if (!identifier || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'The email/username and password are required',
+                message: 'Both email/username and password are required',
                 error: 'MISSING_FIELDS',
                 statusCode: 400
             });
@@ -295,7 +300,7 @@ export const login = async (req: LoginRequest, res: Response) => {
         });
 
     } catch (error) {
-        console.error('❌ Error in login:', error);
+        console.error('❌ Login error:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -323,7 +328,7 @@ export const logout = async (_: Request, res: Response): Promise<void> => {
             statusCode: 200
         });
     } catch (error) {
-        console.error('Logout error:', error);
+        console.error('Logout error occurred:', error);
         res.status(500).json({
             success: false,
             message: 'Error during logout',
@@ -399,7 +404,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error in forgot password:', error);
+        console.error('❌ Error in forgot password process:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -667,7 +672,7 @@ export const googleAuth = async (req: Request, res: Response) => {
             token: jwtToken
         });
     } catch (error) {
-        console.error('Google auth error:', error);
+        console.error('Google authentication error:', error);
         res.status(500).json({
             success: false,
             message: 'Error in Google authentication',

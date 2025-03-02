@@ -1,9 +1,14 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
 
+// Database
 import { client } from '../config/database';
+
+// Types
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ITransaction, RecurrenceType } from '../types/models/ITransaction';
+
+// Utils
 import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
 import { encryptAmount, decryptTransactionsAmounts } from '../utils/transactionEncryption';
 
@@ -17,7 +22,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
     try {
         const { userId } = req.user;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -28,7 +33,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        // Fetch transactions from the database
+        // Retrieve transactions from the database
         const transactions = await transactionsCollection.aggregate([
             { $match: { user_id: new ObjectId(userId) } },
             {
@@ -61,13 +66,13 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
         // Decrypt the amount field for all transactions
         const decryptedTransactions = decryptTransactionsAmounts(transactions);
 
-        // Send the retrieved transactions in the response
+        // Respond with the retrieved transactions
         res.status(200).json({
             success: true,
             data: decryptedTransactions
         });
     } catch (error) {
-        console.error('❌ Error getting transactions:', error);
+        console.error('❌ Error retrieving transactions:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -85,7 +90,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
         const { userId } = req.user;
         const { year } = req.params;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -96,7 +101,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             return;
         }
 
-        // Fetch transactions from the database filtered by year
+        // Retrieve transactions from the database filtered by year
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -128,14 +133,14 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
         // Decrypt the amount field for all transactions
         const decryptedTransactions = decryptTransactionsAmounts(transactions);
 
-        // Send the retrieved transactions in the response
+        // Respond with the retrieved transactions
         res.status(200).json({
             success: true,
             data: decryptedTransactions,
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting transactions by year:', error);
+        console.error('❌ Error retrieving transactions by year:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -153,7 +158,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
         const { userId } = req.user;
         const { year, month } = req.params;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -166,7 +171,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
 
         const monthRegex = month ? `-${month}` : '';
 
-        // Fetch transactions from the database filtered by year and month
+        // Retrieve transactions from the database filtered by year and month
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
@@ -209,14 +214,14 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
         // Decrypt the amount field for all transactions
         const decryptedTransactions = decryptTransactionsAmounts(transactions);
 
-        // Send the retrieved transactions in the response
+        // Respond with the retrieved transactions
         res.status(200).json({
             success: true,
             data: decryptedTransactions,
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting transactions by year and month:', error);
+        console.error('❌ Error retrieving transactions by year and month:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -335,7 +340,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             recurrenceEndDate
         } = req.body;
 
-        // Check if the user ID and category ID formats are valid
+        // Validate the user ID and category ID formats
         if (!ObjectId.isValid(userId) || !ObjectId.isValid(category)) {
             res.status(400).json({
                 success: false,
@@ -346,7 +351,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Check if the amount format is valid
+        // Validate the amount format
         if (typeof amount !== 'number') {
             res.status(400).json({
                 success: false,
@@ -357,7 +362,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Check if the description format is valid
+        // Validate the description format
         if (typeof description !== 'string' || !description.trim()) {
             res.status(400).json({
                 success: false,
@@ -368,7 +373,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Check if the date format is valid
+        // Validate the date format
         if (!DATE_REGEX.test(date)) {
             res.status(400).json({
                 success: false,

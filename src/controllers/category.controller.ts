@@ -1,13 +1,19 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
 
+// Database
 import { client } from '../config/database';
+
+// Types
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ICategory } from '../types/models/ICategory';
+
+// Utils
 import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
 
 // MongoDB categories collection
 const categoriesCollection = client.db(process.env.DB_NAME).collection('categories');
+
 // MongoDB transactions collection
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
 
@@ -18,7 +24,7 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
     try {
         const { userId } = req.user;
 
-        // Check if the user ID format is valid
+        // Validate the user ID format
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
@@ -34,14 +40,14 @@ export const getAllCategories = async (req: AuthRequest, res: Response): Promise
             .find({ user_id: new ObjectId(userId) })
             .toArray();
 
-        // Send a success response with the categories
+        // Respond with the retrieved categories
         res.status(200).json({
             success: true,
             data: categories,
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error getting categories:', error);
+        console.error('❌ Error while fetching categories:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -59,7 +65,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
         const { userId } = req.user;
         const { name, color } = req.body;
 
-        // Ensure required fields are provided
+        // Check for required fields
         if (!name || !color) {
             res.status(400).json({
                 success: false,
@@ -70,7 +76,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Verify if a category with the same name already exists
+        // Check if a category with the same name already exists
         const existingCategory = await categoriesCollection.findOne({
             name: name.toLowerCase(),
             user_id: new ObjectId(userId)
@@ -86,7 +92,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Construct a new category object
+        // Create a new category object
         const newCategory: ICategory = {
             user_id: new ObjectId(userId),
             name,
@@ -109,7 +115,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
         // Insert the new category into the database
         const result = await categoriesCollection.insertOne(newCategory);
 
-        // Send a success response with the created category
+        // Respond with the created category
         res.status(201).json({
             success: true,
             message: 'Category created successfully',
@@ -117,7 +123,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             statusCode: 201
         });
     } catch (error) {
-        console.error('❌ Error creating category:', error);
+        console.error('❌ Error while creating category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -136,7 +142,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
         const { id } = req.params;
         const { name, color } = req.body;
 
-        // Check if the category ID format is valid
+        // Validate the category ID format
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -147,7 +153,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Ensure required fields are provided
+        // Check for required fields
         if (!name || !color) {
             res.status(400).json({
                 success: false,
@@ -184,14 +190,14 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Send a success response
+        // Respond with success message
         res.status(200).json({
             success: true,
             message: 'Category updated successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating category:', error);
+        console.error('❌ Error while updating category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -209,7 +215,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
         const { userId } = req.user;
         const { id } = req.params;
 
-        // Check if the category ID format is valid
+        // Validate the category ID format
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
@@ -220,7 +226,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Verify if the category has associated transactions
+        // Check if the category has associated transactions
         const movementsCount = await transactionsCollection.countDocuments({
             user_id: new ObjectId(userId),
             category: new ObjectId(id)
@@ -254,14 +260,14 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Send a success response
+        // Respond with success message
         res.status(200).json({
             success: true,
             message: 'Category deleted successfully',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting category:', error);
+        console.error('❌ Error while deleting category:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -307,7 +313,7 @@ export const createDefaultCategories = async (req: AuthRequest, res: Response): 
             statusCode: 201
         });
     } catch (error) {
-        console.error('❌ Error creating default categories:', error);
+        console.error('❌ Error while creating default categories:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

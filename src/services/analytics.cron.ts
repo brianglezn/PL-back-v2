@@ -1,5 +1,9 @@
 import cron from 'node-cron';
-import analyticsController from '../controllers/analytics.controller';
+
+// Controllers
+import { saveUserMetricsHistory } from '../controllers/analytics.controller';
+
+// Database
 import { client } from '../config/database';
 
 /**
@@ -7,44 +11,41 @@ import { client } from '../config/database';
  * It runs at 23:59 UTC every day
  */
 export const initAnalyticsCron = () => {
-    console.log('🔄 Initializing analytics cron...');
-    
-    // Check if the cron expression is valid
+    console.log('🔄 Starting the analytics cron job initialization...');
+
+    // Validate the cron expression
     if (!cron.validate('59 23 * * *')) {
-        console.error('❌ Error: Invalid cron expression for analytics');
+        console.error('❌ Error: The cron expression for analytics is invalid');
         return;
     }
-    
+
     cron.schedule('59 23 * * *', async () => {
-        console.log('🔄 Executing daily analytics metrics save job...');
-        
+        console.log('🔄 Running the daily analytics metrics save job...');
+
         try {
-            // Check database connection before executing
+            // Verify database connection before execution
             try {
-                // Attempt to run a simple command to verify the connection
+                // Execute a simple command to check the connection
                 await client.db('admin').command({ ping: 1 });
-                console.log('📡 MongoDB connection verified for analytics job');
+                console.log('📡 MongoDB connection successfully verified for analytics job');
             } catch (dbError) {
-                console.error('❌ Error: No database connection for analytics job', dbError);
+                console.error('❌ Error: Unable to connect to the database for analytics job', dbError);
                 return;
             }
-            
-            // Execute the metrics save
-            await analyticsController.saveUserMetricsHistory();
-            
-            console.log('✅ Analytics metrics save completed successfully');
+
+            // Execute the metrics save - pass false to indicate an automatic save
+            await saveUserMetricsHistory(false);
+
+            console.log('✅ Successfully completed the analytics metrics save');
         } catch (error) {
-            console.error('❌ Error in the daily analytics metrics save job:', error);
-            
-            // Here you could implement a notification system
-            // for example, send an email to the administrator
+            console.error('❌ Error occurred during the daily analytics metrics save job:', error);
         }
     }, {
         timezone: 'UTC',
         scheduled: true
     });
-    
-    console.log('✅ Analytics cron initialized successfully - Scheduled for 23:59 UTC daily');
+
+    console.log('✅ Analytics cron job initialized successfully - Scheduled for daily execution at 23:59 UTC');
 };
 
 /**
@@ -53,26 +54,26 @@ export const initAnalyticsCron = () => {
  * @returns Promise<boolean> - true if the job executed successfully, false otherwise
  */
 export const runAnalyticsJobManually = async (): Promise<boolean> => {
-    console.log('🔄 Manually executing the analytics metrics save job...');
-    
+    console.log('🔄 Manually initiating the analytics metrics save job...');
+
     try {
-        // Check database connection before executing
+        // Verify database connection before execution
         try {
-            // Attempt to run a simple command to verify the connection
+            // Execute a simple command to check the connection
             await client.db('admin').command({ ping: 1 });
-            console.log('📡 MongoDB connection verified for manual analytics job');
+            console.log('📡 MongoDB connection successfully verified for manual analytics job');
         } catch (dbError) {
-            console.error('❌ Error: No database connection for manual analytics job', dbError);
+            console.error('❌ Error: Unable to connect to the database for manual analytics job', dbError);
             return false;
         }
-        
-        // Execute the metrics save
-        await analyticsController.saveUserMetricsHistory();
-        
-        console.log('✅ Manual analytics metrics save completed successfully');
+
+        // Execute the metrics save - pass true to indicate a manual save
+        await saveUserMetricsHistory(true);
+
+        console.log('✅ Successfully completed the manual analytics metrics save');
         return true;
     } catch (error) {
-        console.error('❌ Error in the manual analytics metrics save job:', error);
+        console.error('❌ Error occurred during the manual analytics metrics save job:', error);
         return false;
     }
 }; 

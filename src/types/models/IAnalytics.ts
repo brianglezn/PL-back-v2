@@ -1,6 +1,20 @@
-// Define ISODateString type for backend
+// Define the ISODateString type for backend usage
 export type ISODateString = string;
 
+/**
+ * Interface representing user metrics history records stored in the database
+ */
+export interface IUserMetricsHistory {
+    date: ISODateString;
+    dailyActive: number;
+    weeklyActive: number;
+    monthlyActive: number;
+    isManualSave?: boolean;
+}
+
+/**
+ * Interface representing user metrics returned by the API
+ */
 export interface IUserMetrics {
     totalUsers: number;
     activeUsers: {
@@ -33,6 +47,9 @@ export interface IUserMetrics {
     };
 }
 
+/**
+ * Interface representing transaction metrics returned by the API
+ */
 export interface ITransactionMetrics {
     total: number;
     today: number;
@@ -46,11 +63,17 @@ export interface ITransactionMetrics {
     };
 }
 
+/**
+ * Interface representing transaction history data points
+ */
 export interface ITransactionHistory {
     date: ISODateString;
     count: number;
 }
 
+/**
+ * Interface representing combined analytics data
+ */
 export interface IAnalytics {
     users: IUserMetrics;
     transactions: ITransactionMetrics;

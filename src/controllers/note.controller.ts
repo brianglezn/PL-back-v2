@@ -1,9 +1,14 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
 
+// Database
 import { client } from '../config/database';
+
+// Types
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { INote } from '../types/models/INote';
+
+// Utils
 import { getCurrentUTCDate } from '../utils/dateUtils';
 import { encryptNote, decryptNote, decryptNotes } from '../utils/noteEncryption';
 
@@ -32,15 +37,15 @@ export const getAllNotes = async (req: AuthRequest, res: Response): Promise<void
 
         res.status(200).json({
             success: true,
-            message: 'Notes retrieved successfully',
+            message: 'Notes successfully retrieved',
             data: decryptedNotes,
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving notes:', error);
+        console.error('❌ Error while retrieving notes:', error);
         res.status(500).json({
             success: false,
-            message: 'Error retrieving notes',
+            message: 'Failed to retrieve notes',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
@@ -79,7 +84,7 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
         if (!insertedNote) {
             res.status(500).json({
                 success: false,
-                message: 'Error creating note',
+                message: 'Failed to create note',
                 error: 'DATABASE_ERROR',
                 statusCode: 500
             });
@@ -90,12 +95,12 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
 
         res.status(201).json({
             success: true,
-            message: 'Note created successfully',
+            message: 'Note successfully created',
             data: decryptedNote,
             statusCode: 201
         });
     } catch (error) {
-        console.error('❌ Error creating note:', error);
+        console.error('❌ Error while creating note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -156,10 +161,10 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
         );
 
         if (updateResult.modifiedCount === 0) {
-            console.error('Error updating note:', { id, userId });
+            console.error('Error while updating note:', { id, userId });
             res.status(500).json({
                 success: false,
-                message: 'Error updating note',
+                message: 'Failed to update note',
                 error: 'DATABASE_ERROR',
                 statusCode: 500
             });
@@ -186,13 +191,13 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
 
         res.status(200).json({
             success: true,
-            message: 'Note updated successfully',
+            message: 'Note successfully updated',
             data: decryptedNote,
             statusCode: 200
         });
 
     } catch (error) {
-        console.error('❌ Error updating note:', error);
+        console.error('❌ Error while updating note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -241,11 +246,11 @@ export const deleteNote = async (req: AuthRequest, res: Response): Promise<void>
         // Return success message
         res.status(200).json({
             success: true,
-            message: 'Note deleted successfully',
+            message: 'Note successfully deleted',
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting note:', error);
+        console.error('❌ Error while deleting note:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

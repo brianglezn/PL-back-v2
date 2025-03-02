@@ -1,9 +1,14 @@
 import type { Response } from 'express';
 import { ObjectId } from 'mongodb';
 
+// Database
 import { client } from '../config/database';
+
+// Types
 import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { IAccount, IYearRecord, YearRecord } from '../types/models/IAccount';
+
+// Utils
 import { getCurrentUTCDate, DATE_REGEX } from '../utils/dateUtils';
 import { createEncryptedYearRecord, decryptAccountRecords, encryptYearRecord } from '../utils/accountEncryption';
 
@@ -31,10 +36,10 @@ export const getAllAccounts = async (req: AuthRequest, res: Response): Promise<v
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving accounts:', error);
+        console.error('❌ Error while retrieving accounts:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Internal server error occurred while retrieving accounts',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
@@ -52,7 +57,7 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
         if (!ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid user ID format',
+                message: 'Invalid user ID format provided',
                 error: 'INVALID_ID_FORMAT',
                 statusCode: 400
             });
@@ -91,10 +96,10 @@ export const getAccountsByYear = async (req: AuthRequest, res: Response): Promis
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving accounts by year:', error);
+        console.error('❌ Error while retrieving accounts by year:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Internal server error occurred while retrieving accounts by year',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
@@ -112,7 +117,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         if (!accountName || !configuration) {
             res.status(400).json({
                 success: false,
-                message: 'Missing required fields',
+                message: 'Required fields are missing',
                 error: 'VALIDATION_ERROR',
                 statusCode: 400
             });
@@ -140,7 +145,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         if (!DATE_REGEX.test(newAccount.createdAt) || !DATE_REGEX.test(newAccount.updatedAt)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid date format',
+                message: 'Invalid date format provided',
                 error: 'INVALID_DATE_FORMAT',
                 statusCode: 400
             });
@@ -150,7 +155,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
         const result = await accountsCollection.insertOne(newAccount);
 
         if (!result.acknowledged) {
-            throw new Error('Error creating account');
+            throw new Error('Error occurred while creating account');
         }
 
         const decryptedAccount = {
@@ -165,10 +170,10 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             statusCode: 201
         });
     } catch (error) {
-        console.error('❌ Error creating account:', error);
+        console.error('❌ Error while creating account:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Internal server error occurred while creating account',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
@@ -188,7 +193,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
         if (!ObjectId.isValid(id) || !ObjectId.isValid(userId)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid ID format',
+                message: 'Invalid ID format provided',
                 error: 'INVALID_ID_FORMAT',
                 statusCode: 400
             });
@@ -224,7 +229,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
 
         // Check if the update was successful
         if (!result) {
-            console.error('❌ Error in the update: Account not found');
+            console.error('❌ Error during update: Account not found');
             res.status(404).json({
                 success: false,
                 message: 'Account not found',
@@ -249,10 +254,10 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating account:', error);
+        console.error('❌ Error while updating account:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Internal server error occurred while updating account',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
@@ -271,7 +276,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
         if (!ObjectId.isValid(id)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid account ID format',
+                message: 'Invalid account ID format provided',
                 error: 'INVALID_ID_FORMAT',
                 statusCode: 400
             });
@@ -302,13 +307,12 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting account:', error);
+        console.error('❌ Error while deleting account:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error',
+            message: 'Internal server error occurred while deleting account',
             error: 'DATABASE_ERROR',
             statusCode: 500
         });
     }
 };
-
