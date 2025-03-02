@@ -9,7 +9,7 @@ import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ITransaction, RecurrenceType } from '../types/models/ITransaction';
 
 // Utils
-import { DATE_REGEX, toUTCDate, getCurrentUTCDate } from '../utils/dateUtils';
+import { DATE_REGEX, toUTCDate, getCurrentUTCDate, fromUTCString } from '../utils/dateUtils';
 import { encryptAmount, decryptTransactionsAmounts } from '../utils/transactionEncryption';
 
 // MongoDB transactions collection
@@ -72,7 +72,7 @@ export const getAllTransactions = async (req: AuthRequest, res: Response): Promi
             data: decryptedTransactions
         });
     } catch (error) {
-        console.error('❌ Error retrieving transactions:', error);
+        console.error('❌ Error occurred while retrieving transactions:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -140,7 +140,7 @@ export const getTransactionsByYear = async (req: AuthRequest, res: Response): Pr
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving transactions by year:', error);
+        console.error('❌ Error occurred while retrieving transactions by year:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -221,7 +221,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error retrieving transactions by year and month:', error);
+        console.error('❌ Error occurred while retrieving transactions by year and month:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -231,18 +231,36 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
     }
 };
 
-// Helper function to generate recurrent dates based on the specified recurrence type
+/**
+ * Helper function to generate recurrent dates based on the specified recurrence type.
+ * Uses the date utilities to ensure consistent date handling.
+ * 
+ * @param startDate - The start date for recurrence
+ * @param endDate - The end date for recurrence
+ * @param recurrenceType - The type of recurrence (weekly, monthly, yearly)
+ * @returns An array of Date objects representing the recurrence dates
+ */
 const generateRecurrentDates = (
     startDate: Date,
     endDate: Date,
     recurrenceType: RecurrenceType
 ): Date[] => {
+    // Convert dates to ISO UTC format and then back to Date objects
+    // to ensure consistency in date handling
+    const startISOString = toUTCDate(startDate);
+    const endISOString = toUTCDate(endDate);
+    
+    const startDateNormalized = fromUTCString(startISOString);
+    const endDateNormalized = fromUTCString(endISOString);
+    
     const dates: Date[] = [];
-    let currentDate = new Date(startDate.getTime());
+    let currentDate = new Date(startDateNormalized.getTime());
 
-    while (currentDate <= endDate) {
+    while (currentDate <= endDateNormalized) {
+        // Create a copy of the current date to add to the list
         dates.push(new Date(currentDate.getTime()));
 
+        // Calculate the next date based on the recurrence type
         const nextDate = new Date(currentDate.getTime());
         switch (recurrenceType) {
             case 'weekly':
@@ -409,8 +427,19 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         const encryptedAmount = encryptAmount(amount);
 
         if (isRecurrent) {
-            const startDate = new Date(date);
-            const endDate = new Date(recurrenceEndDate);
+            // Validate and convert dates using date utilities
+            if (!DATE_REGEX.test(date) || !DATE_REGEX.test(recurrenceEndDate)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid date format',
+                    error: 'INVALID_DATE_FORMAT',
+                    statusCode: 400
+                });
+                return;
+            }
+            
+            const startDate = fromUTCString(date);
+            const endDate = fromUTCString(recurrenceEndDate);
             
             // Ensure the end date is after the start date
             if (endDate <= startDate) {
@@ -428,7 +457,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
 
             const recurrentTransactions = recurrentDates.map((date, index) => ({
                 user_id: new ObjectId(userId),
-                date: date.toISOString(),
+                date: toUTCDate(date),
                 description: description.trim(),
                 amount: encryptedAmount, // Store the encrypted amount
                 category: new ObjectId(category),
@@ -477,7 +506,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             });
         }
     } catch (error) {
-        console.error('❌ Error creating transaction:', error);
+        console.error('❌ Error occurred while creating transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -573,7 +602,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error updating transaction:', error);
+        console.error('❌ Error occurred while updating transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -624,7 +653,7 @@ export const deleteTransaction = async (req: AuthRequest, res: Response): Promis
             statusCode: 200
         });
     } catch (error) {
-        console.error('❌ Error deleting transaction:', error);
+        console.error('❌ Error occurred while deleting transaction:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
