@@ -627,61 +627,66 @@ export const getUserMetricsHistory = async (req: Request, res: Response): Promis
             }
         }).sort({ date: 1 }).toArray();
 
-        // Format the data for the chart.
+        // Initialize the array to hold the formatted history data
         const formattedHistory: IUserMetricsHistory[] = [];
         
-        if (metrics.length > 0) {
-            // If we have data, format it.
-            if (type === 'daily') {
-                // For daily view, we want to show the last 7 days.
-                const last7Days: { date: string; count: number }[] = [];
-                const today = new Date();
-                today.setUTCHours(0, 0, 0, 0);
+        if (type === 'daily') {
+            // For daily view, generate data for the last 7 days
+            const today = new Date();
+            today.setUTCHours(0, 0, 0, 0);
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().slice(0, 10);
                 
-                for (let i = 6; i >= 0; i--) {
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - i);
-                    const dateStr = date.toISOString().slice(0, 10);
-                    
-                    // Find the metric for this date.
-                    const metric = metrics.find(m => {
-                        const metricDate = new Date(m.date);
-                        return metricDate.toISOString().slice(0, 10) === dateStr;
-                    });
-                    
-                    last7Days.push({
-                        date: toUTCDate(date),
-                        count: metric ? metric.dailyActive : 0
-                    });
-                }
-                
-                formattedHistory.push(...last7Days as unknown as IUserMetricsHistory[]);
-            } else {
-                // Group by month.
-                const monthlyData: Record<string, { date: string; count: number }> = {};
-                
-                metrics.forEach(metric => {
-                    const date = new Date(metric.date);
-                    const monthKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`;
-                    
-                    if (!monthlyData[monthKey] || new Date(monthlyData[monthKey].date).getTime() < date.getTime()) {
-                        monthlyData[monthKey] = {
-                            date: metric.date,
-                            count: metric.monthlyActive
-                        };
-                    }
+                // Find the metric for this date
+                const metric = metrics.find(m => {
+                    const metricDate = new Date(m.date);
+                    return metricDate.toISOString().slice(0, 10) === dateStr;
                 });
                 
-                // Convert to array and sort.
-                const monthlyArray = Object.values(monthlyData);
-                monthlyArray.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                
-                // Take the last 12 months.
-                formattedHistory.push(...monthlyArray as unknown as IUserMetricsHistory[]);
+                formattedHistory.push({
+                    date: toUTCDate(date),
+                    dailyActive: metric ? metric.dailyActive : 0,
+                    monthlyActive: metric ? metric.monthlyActive : 0
+                });
             }
         } else {
-            // If no data, return an empty array.
-            // We could also generate dummy data here if needed.
+            // For monthly view, generate data for the last 12 months
+            const currentMonth = new Date();
+            currentMonth.setUTCDate(1); // First day of current month
+            currentMonth.setUTCHours(0, 0, 0, 0);
+            
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date(currentMonth);
+                date.setMonth(date.getMonth() - i);
+                
+                // Create a key for this month in format YYYY-MM
+                const monthKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+                
+                // Find metrics for this month
+                const monthMetrics = metrics.filter(m => {
+                    const metricDate = new Date(m.date);
+                    return metricDate.getUTCFullYear() === date.getUTCFullYear() && 
+                           metricDate.getUTCMonth() === date.getUTCMonth();
+                });
+                
+                // If we have metrics for this month, use the latest one
+                // Otherwise, use 0
+                let monthlyValue = 0;
+                if (monthMetrics.length > 0) {
+                    // Sort by date descending to get the most recent
+                    monthMetrics.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    monthlyValue = monthMetrics[0].monthlyActive;
+                }
+                
+                formattedHistory.push({
+                    date: toUTCDate(date),
+                    dailyActive: 0, // Not relevant for monthly view
+                    monthlyActive: monthlyValue
+                });
+            }
         }
 
         res.status(200).json({
