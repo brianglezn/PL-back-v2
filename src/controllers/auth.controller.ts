@@ -9,7 +9,7 @@ import { IUser } from '../types/models/IUser';
 import { getWelcomeEmailTemplate, getPasswordResetEmailTemplate, getPasswordChangeEmailTemplate } from '../utils/emailTemplates';
 import { getCurrentUTCDate } from '../utils/dateUtils';
 
-// MongoDB users collection
+// MongoDB users collection reference
 const usersCollection = client.db(process.env.DB_NAME).collection('users');
 
 const oAuthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -31,14 +31,14 @@ interface LoginRequest extends Request {
 }
 
 /**
- * Sets a cookie in the response containing the provided token.
+ * Sets a cookie in the response containing the provided JWT token.
  */
 function setCookie(res: Response, token: string) {
     const cookieOptions = {
         httpOnly: true,
         secure: true,
         sameSite: 'none' as const,
-        maxAge: 24 * 60 * 60 * 1000,
+        maxAge: 24 * 60 * 60 * 1000, // Cookie valid for 24 hours
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         path: '/',
         domain: undefined
@@ -63,7 +63,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate the format of the email
+        // Validate the format of the email address
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({
@@ -85,7 +85,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Validate that the password is strong
+        // Validate that the password meets strength requirements
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
@@ -118,7 +118,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
             });
         }
 
-        // Hash the password before storing it
+        // Hash the password before storing it in the database
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new user object with the provided data
@@ -157,7 +157,7 @@ export const register = async (req: RegisterRequest, res: Response) => {
                 username: newUser.username
             },
             process.env.JWT_SECRET as string,
-            { expiresIn: '24h' }
+            { expiresIn: '24h' } // Token valid for 24 hours
         );
 
         // Set the cookie with the generated token
@@ -219,7 +219,7 @@ export const login = async (req: LoginRequest, res: Response) => {
     try {
         const { identifier, password } = req.body;
 
-        // Validate that both identifier and password are provided
+        // Validate that both identifier (email/username) and password are provided
         if (!identifier || !password) {
             return res.status(400).json({
                 success: false,
@@ -275,7 +275,7 @@ export const login = async (req: LoginRequest, res: Response) => {
                 username: user.username
             },
             process.env.JWT_SECRET as string,
-            { expiresIn: '24h' }
+            { expiresIn: '24h' } // Token valid for 24 hours
         );
 
         // Set the HTTP-only cookie with the generated token
@@ -488,7 +488,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // Validate that the new password is strong
+        // Validate that the new password meets strength requirements
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             return res.status(400).json({
@@ -585,15 +585,27 @@ export const googleAuth = async (req: Request, res: Response) => {
         let user = await usersCollection.findOne({ email }) as IUser | null;
 
         if (user) {
-            // If the user exists but does not have a Google ID, update the user record
+            // If the user exists
             if (!user.googleId) {
+                // If the user does not have a googleId, update with the googleId and lastLogin
                 await usersCollection.updateOne(
                     { _id: user._id },
                     {
                         $set: {
                             googleId,
                             profileImage: picture || user.profileImage,
+                            lastLogin: getCurrentUTCDate(),
                             updatedAt: getCurrentUTCDate()
+                        }
+                    }
+                );
+            } else {
+                // If the user already has a googleId, only update lastLogin
+                await usersCollection.updateOne(
+                    { _id: user._id },
+                    {
+                        $set: {
+                            lastLogin: getCurrentUTCDate()
                         }
                     }
                 );
@@ -642,7 +654,7 @@ export const googleAuth = async (req: Request, res: Response) => {
                 username: user.username
             },
             process.env.JWT_SECRET as string,
-            { expiresIn: '24h' }
+            { expiresIn: '24h' } // Token valid for 24 hours
         );
 
         // Set the cookie with the generated token
