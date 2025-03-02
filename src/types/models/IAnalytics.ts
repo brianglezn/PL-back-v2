@@ -2,29 +2,30 @@
 export type ISODateString = string;
 
 /**
- * Interface representing user metrics history records stored in the database
+ * Interface representing user metrics history records stored in the database.
+ * This interface captures the date of the record, the number of daily active users,
+ * the number of monthly active users, and whether the save was manual.
  */
 export interface IUserMetricsHistory {
     date: ISODateString;
     dailyActive: number;
-    weeklyActive: number;
     monthlyActive: number;
     isManualSave?: boolean;
 }
 
 /**
- * Interface representing user metrics returned by the API
+ * Interface representing user metrics returned by the API.
+ * This interface includes total users, active users, new users, retention metrics,
+ * and comparison metrics for better insights.
  */
 export interface IUserMetrics {
     totalUsers: number;
     activeUsers: {
         daily: number;
-        weekly: number;
         monthly: number;
     };
     newUsers: {
         daily: number;
-        weekly: number;
         monthly: number;
     };
     retention: {
@@ -36,19 +37,19 @@ export interface IUserMetrics {
         totalUsers: number;
         activeUsers: {
             daily: number;
-            weekly: number;
             monthly: number;
         };
         newUsers: {
             daily: number;
-            weekly: number;
             monthly: number;
         };
     };
 }
 
 /**
- * Interface representing transaction metrics returned by the API
+ * Interface representing transaction metrics returned by the API.
+ * This interface includes total transactions, today's transactions, this month's transactions,
+ * average transactions per user, and comparison metrics for analysis.
  */
 export interface ITransactionMetrics {
     total: number;
@@ -64,7 +65,8 @@ export interface ITransactionMetrics {
 }
 
 /**
- * Interface representing transaction history data points
+ * Interface representing transaction history data points.
+ * This interface captures the date of the transaction and the count of transactions on that date.
  */
 export interface ITransactionHistory {
     date: ISODateString;
@@ -72,7 +74,8 @@ export interface ITransactionHistory {
 }
 
 /**
- * Interface representing combined analytics data
+ * Interface representing combined analytics data.
+ * This interface consolidates user metrics and transaction metrics along with the last updated timestamp.
  */
 export interface IAnalytics {
     users: IUserMetrics;
