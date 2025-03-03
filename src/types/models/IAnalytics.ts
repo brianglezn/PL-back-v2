@@ -2,21 +2,8 @@
 export type ISODateString = string;
 
 /**
- * Interface representing user metrics history records stored in the database.
- * This interface captures the date of the record, the number of daily active users,
- * the number of monthly active users, and whether the save was manual.
- */
-export interface IUserMetricsHistory {
-    date: ISODateString;
-    dailyActive: number;
-    monthlyActive: number;
-    isManualSave?: boolean;
-}
-
-/**
  * Interface representing user metrics returned by the API.
- * This interface includes total users, active users, new users, retention metrics,
- * and comparison metrics for better insights.
+ * This interface includes total users, active users, new users, and retention metrics.
  */
 export interface IUserMetrics {
     totalUsers: number;
@@ -32,17 +19,6 @@ export interface IUserMetrics {
         sevenDays: number;
         thirtyDays: number;
         ninetyDays: number;
-    };
-    comparison: {
-        totalUsers: number;
-        activeUsers: {
-            daily: number;
-            monthly: number;
-        };
-        newUsers: {
-            daily: number;
-            monthly: number;
-        };
     };
 }
 

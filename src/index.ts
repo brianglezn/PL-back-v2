@@ -16,9 +16,9 @@ import accountRoutes from './routes/account.routes';
 import noteRoutes from './routes/note.routes';
 import transactionRoutes from './routes/transaction.routes';
 import analyticsRoutes from './routes/analytics.routes';
+
 // Import services
 import { startScheduledBackups, executeManualBackup } from './services/backup.service';
-import { initAnalyticsCron } from './services/analytics.cron';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -100,8 +100,6 @@ async function initializeServer() {
 
         // Start the scheduled backups service
         startScheduledBackups();
-        // Initialize the analytics cron job after connecting to the database
-        initAnalyticsCron();
 
         app.listen(PORT, () => {
             console.log(`🚀 Server is successfully running on port ${PORT}`);

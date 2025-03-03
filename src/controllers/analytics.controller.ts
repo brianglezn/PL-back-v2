@@ -3,66 +3,12 @@ import { client } from '../config/database';
 import { toUTCDate, getCurrentUTCDate, createUTCMonthRange } from '../utils/dateUtils';
 
 // Types
-import { IUserMetrics, ITransactionMetrics, ITransactionHistory, IUserMetricsHistory } from '../types/models/IAnalytics';
+import { IUserMetrics, ITransactionMetrics, ITransactionHistory } from '../types/models/IAnalytics';
 
 // MongoDB collections
 const db = client.db(process.env.DB_NAME);
 const usersCollection = db.collection('users');
-const userMetricsHistoryCollection = db.collection('userMetricsHistory');
 const transactionsCollection = db.collection('transactions');
-
-/**
- * Save the current user metrics to history.
- * This function should be invoked by a daily cron job at the end of each day or manually.
- * @param isManualSave - Indicates if this is a manual save (true) or an automated cron save (false).
- */
-export const saveUserMetricsHistory = async (isManualSave: boolean = false): Promise<boolean> => {
-    try {
-        console.log(`🔄 Starting user metrics save... (${isManualSave ? 'manual' : 'automated'} save)`);
-
-        const now = getCurrentUTCDate();
-        const currentYear = new Date().getUTCFullYear();
-        const currentMonth = new Date().getUTCMonth() + 1;
-
-        // Get UTC date range for the current month
-        const { start: startOfMonth, end: endOfMonth } = createUTCMonthRange(currentYear, currentMonth);
-
-        // Calculate metrics
-        const [dailyActiveCount, monthlyActiveCount, totalUsersCount] = await Promise.all([
-            usersCollection.countDocuments({
-                lastLogin: { $gte: startOfMonth }
-            }),
-            usersCollection.countDocuments({
-                lastLogin: { $gte: startOfMonth, $lte: endOfMonth }
-            }),
-            usersCollection.countDocuments({})
-        ]);
-
-        // Calculate retention rate
-        const retentionRate = await calculateRetentionRate(usersCollection, startOfMonth);
-
-        // Create metrics record
-        const metricsRecord: IUserMetricsHistory = {
-            date: now,
-            dailyActive: dailyActiveCount,
-            monthlyActive: monthlyActiveCount,
-            isManualSave
-        };
-
-        // Save to history collection
-        const result = await userMetricsHistoryCollection.insertOne(metricsRecord);
-
-        if (!result.acknowledged) {
-            throw new Error('Failed to save metrics to history');
-        }
-
-        console.log('✅ User metrics saved successfully');
-        return true;
-    } catch (error) {
-        console.error('❌ Error saving user metrics history:', error);
-        return false;
-    }
-};
 
 /**
  * Calculate user retention rate based on returning users
@@ -99,10 +45,11 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
         // Get UTC date range for the current month
         const { start: startOfMonth, end: endOfMonth } = createUTCMonthRange(currentYear, currentMonth);
 
-        // Get previous month's range
-        const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-        const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-        const { start: startOfPrevMonth, end: endOfPrevMonth } = createUTCMonthRange(prevYear, prevMonth);
+        // Create range for today
+        const startOfToday = new Date(now);
+        startOfToday.setUTCHours(0, 0, 0, 0);
+        const endOfToday = new Date(now);
+        endOfToday.setUTCHours(23, 59, 59, 999);
 
         // Calculate metrics
         const [
@@ -114,7 +61,7 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
         ] = await Promise.all([
             // Daily active users (users who logged in today)
             usersCollection.countDocuments({
-                lastLogin: { $gte: startOfMonth }
+                lastLogin: { $gte: startOfToday.toISOString(), $lte: endOfToday.toISOString() }
             }),
             // Monthly active users
             usersCollection.countDocuments({
@@ -124,7 +71,7 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
             usersCollection.countDocuments({}),
             // New users today
             usersCollection.countDocuments({
-                createdAt: { $gte: startOfMonth }
+                createdAt: { $gte: startOfToday.toISOString(), $lte: endOfToday.toISOString() }
             }),
             // New users this month
             usersCollection.countDocuments({
@@ -134,15 +81,6 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
 
         // Calculate retention rate
         const retentionRate = await calculateRetentionRate(usersCollection, startOfMonth);
-
-        // Calculate growth rates
-        const prevMonthUsers = await usersCollection.countDocuments({
-            createdAt: { $lte: endOfPrevMonth }
-        });
-
-        const userGrowthRate = prevMonthUsers > 0
-            ? ((totalUsers - prevMonthUsers) / prevMonthUsers) * 100
-            : 0;
 
         const metrics: IUserMetrics = {
             totalUsers,
@@ -158,17 +96,6 @@ export const getUserMetrics = async (req: Request, res: Response): Promise<void>
                 sevenDays: retentionRate,
                 thirtyDays: retentionRate, // Podríamos calcular diferentes períodos en el futuro
                 ninetyDays: retentionRate
-            },
-            comparison: {
-                totalUsers: prevMonthUsers,
-                activeUsers: {
-                    daily: 0, // Estos valores podrían calcularse si es necesario
-                    monthly: 0
-                },
-                newUsers: {
-                    daily: 0,
-                    monthly: 0
-                }
             }
         };
 
@@ -439,160 +366,6 @@ export const getTransactionHistory = async (req: Request, res: Response): Promis
         res.status(500).json({
             success: false,
             message: 'Error occurred while retrieving transaction history.',
-            error: errorType,
-            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-        });
-    }
-};
-
-/**
- * Retrieve user metrics history for chart.
- */
-export const getUserMetricsHistory = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { type = 'monthly' } = req.query;
-
-        // Validate the requested history type.
-        if (type !== 'daily' && type !== 'monthly') {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid history type. It must be "daily" or "monthly".',
-                error: 'INVALID_DATE_RANGE'
-            });
-            return;
-        }
-
-        const now = getCurrentUTCDate();
-        let startDate: Date;
-        let endDate: Date;
-        let groupByFormat: string;
-
-        if (type === 'daily') {
-            // Last 7 days.
-            startDate = new Date(now);
-            startDate.setDate(startDate.getDate() - 6);
-            startDate.setUTCHours(0, 0, 0, 0);
-            endDate = new Date(now);
-            endDate.setUTCHours(23, 59, 59, 999);
-            groupByFormat = '%Y-%m-%d';
-        } else {
-            // Last 12 months including current month.
-            startDate = new Date(now);
-            startDate.setUTCMonth(startDate.getUTCMonth() - 11, 1);
-            startDate.setUTCHours(0, 0, 0, 0);
-            endDate = new Date(now);
-            endDate.setUTCMonth(endDate.getUTCMonth() + 1, 0);
-            endDate.setUTCHours(23, 59, 59, 999);
-            groupByFormat = '%Y-%m';
-        }
-
-        const startDateUTC = toUTCDate(startDate);
-        const endDateUTC = toUTCDate(endDate);
-
-        // Determine the metrics field to use based on the type.
-        let metricField = 'dailyActive';
-        if (type === 'monthly') {
-            metricField = 'monthlyActive';
-        }
-
-        // Retrieve all metrics in the date range.
-        const metrics = await userMetricsHistoryCollection.find({
-            date: {
-                $gte: startDateUTC,
-                $lte: endDateUTC
-            }
-        }).sort({ date: 1 }).toArray();
-
-        // Initialize the array to hold the formatted history data
-        const formattedHistory: IUserMetricsHistory[] = [];
-        
-        if (type === 'daily') {
-            // For daily view, generate data for the last 7 days
-            const today = new Date();
-            today.setUTCHours(0, 0, 0, 0);
-            
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().slice(0, 10);
-                
-                // Find the metric for this date
-                const metric = metrics.find(m => {
-                    const metricDate = new Date(m.date);
-                    return metricDate.toISOString().slice(0, 10) === dateStr;
-                });
-                
-                formattedHistory.push({
-                    date: toUTCDate(date),
-                    dailyActive: metric ? metric.dailyActive : 0,
-                    monthlyActive: metric ? metric.monthlyActive : 0
-                });
-            }
-        } else {
-            // For monthly view, generate data for the last 12 months
-            const currentMonth = new Date();
-            currentMonth.setUTCDate(1); // First day of current month
-            currentMonth.setUTCHours(0, 0, 0, 0);
-            
-            for (let i = 11; i >= 0; i--) {
-                const date = new Date(currentMonth);
-                date.setMonth(date.getMonth() - i);
-                
-                // Create a key for this month in format YYYY-MM
-                const monthKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`;
-                
-                // Find metrics for this month
-                const monthMetrics = metrics.filter(m => {
-                    const metricDate = new Date(m.date);
-                    return metricDate.getUTCFullYear() === date.getUTCFullYear() && 
-                           metricDate.getUTCMonth() === date.getUTCMonth();
-                });
-                
-                // If we have metrics for this month, use the latest one
-                // Otherwise, use 0
-                let monthlyValue = 0;
-                if (monthMetrics.length > 0) {
-                    // Sort by date descending to get the most recent
-                    monthMetrics.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                    monthlyValue = monthMetrics[0].monthlyActive;
-                }
-                
-                formattedHistory.push({
-                    date: toUTCDate(date),
-                    dailyActive: 0, // Not relevant for monthly view
-                    monthlyActive: monthlyValue
-                });
-            }
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'User metrics history retrieved successfully.',
-            data: formattedHistory,
-            metadata: {
-                lastUpdated: now,
-                type
-            }
-        });
-
-    } catch (error) {
-        console.error('Error occurred while retrieving user metrics history:', error);
-        
-        // Determine the type of error.
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const isDbError = errorMessage.toLowerCase().includes('database') || 
-                          errorMessage.toLowerCase().includes('mongo') ||
-                          errorMessage.toLowerCase().includes('db');
-        const isDateError = errorMessage.toLowerCase().includes('date') || 
-                           errorMessage.toLowerCase().includes('time');
-        
-        let errorType = 'ANALYTICS_PROCESSING_ERROR';
-        if (isDbError) errorType = 'DATABASE_ERROR';
-        else if (isDateError) errorType = 'INVALID_DATE_RANGE';
-        
-        res.status(500).json({
-            success: false,
-            message: 'Error occurred while retrieving user metrics history.',
             error: errorType,
             details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
         });
