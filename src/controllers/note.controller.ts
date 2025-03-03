@@ -70,6 +70,7 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Create note with UTC ISO dates
         const newNote = encryptNote({
             user_id: new ObjectId(userId),
             title,
@@ -91,6 +92,7 @@ export const createNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Frontend will handle UTC ISO to local time conversion
         const decryptedNote = decryptNote(insertedNote);
 
         res.status(201).json({
@@ -145,6 +147,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Update note with UTC ISO date
         const encryptedNote = encryptNote({
             title,
             content,
@@ -187,6 +190,7 @@ export const updateNote = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        // Frontend will handle UTC ISO to local time conversion
         const decryptedNote = decryptNote(updatedNote);
 
         res.status(200).json({

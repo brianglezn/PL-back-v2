@@ -9,8 +9,9 @@ import type { AuthRequest } from '../middlewares/auth.middleware';
 import type { ITransaction, RecurrenceType } from '../types/models/ITransaction';
 
 // Utils
-import { DATE_REGEX, toUTCDate, getCurrentUTCDate, fromUTCString } from '../utils/dateUtils';
+import { DATE_REGEX, toUTCDate, getCurrentUTCDate, fromUTCString, localToUTC } from '../utils/dateUtils';
 import { encryptAmount, decryptTransactionsAmounts } from '../utils/transactionEncryption';
+import { createUTCMonthRange } from '../utils/dateUtils';
 
 // MongoDB transactions collection
 const transactionsCollection = client.db(process.env.DB_NAME).collection('transactions');
@@ -169,18 +170,20 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             return;
         }
 
-        const monthRegex = month ? `-${month}` : '';
+        // Get UTC date range for the month
+        const { start: startOfMonth, end: endOfMonth } = createUTCMonthRange(
+            parseInt(year),
+            parseInt(month)
+        );
 
         // Retrieve transactions from the database filtered by year and month
         const transactions = await transactionsCollection.aggregate([
             {
                 $match: {
                     user_id: new ObjectId(userId),
-                    $expr: {
-                        $and: [
-                            { $eq: [{ $year: { $dateFromString: { dateString: '$date' } } }, parseInt(year)] },
-                            { $eq: [{ $month: { $dateFromString: { dateString: '$date' } } }, parseInt(month)] }
-                        ]
+                    date: {
+                        $gte: startOfMonth,
+                        $lte: endOfMonth
                     }
                 }
             },
@@ -196,7 +199,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
             {
                 $project: {
                     _id: 1,
-                    date: 1,
+                    date: 1, // Will be in UTC ISO format
                     description: 1,
                     amount: 1,
                     category: '$categoryData.name',
@@ -214,7 +217,7 @@ export const getTransactionsByYearAndMonth = async (req: AuthRequest, res: Respo
         // Decrypt the amount field for all transactions
         const decryptedTransactions = decryptTransactionsAmounts(transactions);
 
-        // Respond with the retrieved transactions
+        // Frontend will convert the UTC ISO dates to local time
         res.status(200).json({
             success: true,
             data: decryptedTransactions,
@@ -349,13 +352,13 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     try {
         const { userId } = req.user;
         const {
-            date,
+            date, // This will be in LocalTime from frontend
             description,
             amount,
             category,
             isRecurrent,
             recurrenceType,
-            recurrenceEndDate
+            recurrenceEndDate // This will be in LocalTime from frontend
         } = req.body;
 
         // Validate the user ID and category ID formats
@@ -368,6 +371,10 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             });
             return;
         }
+
+        // Convert LocalTime to UTC ISO
+        const utcDate = localToUTC(date);
+        const utcEndDate = recurrenceEndDate ? localToUTC(recurrenceEndDate) : undefined;
 
         // Validate the amount format
         if (typeof amount !== 'number') {
@@ -391,18 +398,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return;
         }
 
-        // Validate the date format
-        if (!DATE_REGEX.test(date)) {
-            res.status(400).json({
-                success: false,
-                message: 'Date must be in format YYYY-MM-DDTHH:mm:ss.sssZ',
-                error: 'INVALID_DATE_FORMAT',
-                statusCode: 400
-            });
-            return;
-        }
-
-        if (isRecurrent && (!recurrenceType || !recurrenceEndDate)) {
+        if (isRecurrent && (!recurrenceType || !utcEndDate)) {
             res.status(400).json({
                 success: false,
                 message: 'Recurrence type and end date are required for recurrent transactions',
@@ -427,19 +423,8 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         const encryptedAmount = encryptAmount(amount);
 
         if (isRecurrent) {
-            // Validate and convert dates using date utilities
-            if (!DATE_REGEX.test(date) || !DATE_REGEX.test(recurrenceEndDate)) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Invalid date format',
-                    error: 'INVALID_DATE_FORMAT',
-                    statusCode: 400
-                });
-                return;
-            }
-            
-            const startDate = fromUTCString(date);
-            const endDate = fromUTCString(recurrenceEndDate);
+            const startDate = fromUTCString(utcDate);
+            const endDate = fromUTCString(utcEndDate!);
             
             // Ensure the end date is after the start date
             if (endDate <= startDate) {
@@ -459,7 +444,7 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
                 user_id: new ObjectId(userId),
                 date: toUTCDate(date),
                 description: description.trim(),
-                amount: encryptedAmount, // Store the encrypted amount
+                amount: encryptedAmount,
                 category: new ObjectId(category),
                 createdAt: getCurrentUTCDate(),
                 updatedAt: getCurrentUTCDate(),
@@ -480,9 +465,9 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         } else {
             const baseTransaction: ITransaction = {
                 user_id: new ObjectId(userId),
-                date: toUTCDate(date),
+                date: utcDate,
                 description: description.trim(),
-                amount: encryptedAmount, // Store the encrypted amount
+                amount: encryptedAmount,
                 category: new ObjectId(category),
                 createdAt: getCurrentUTCDate(),
                 updatedAt: getCurrentUTCDate(),
@@ -525,22 +510,14 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
         const { id } = req.params;
         const { updateAll, category, date, amount, ...updateData } = req.body;
 
-        // Validate the date format if provided
-        if (date && !DATE_REGEX.test(date)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid date format',
-                error: 'INVALID_DATE_FORMAT',
-                statusCode: 400
-            });
-            return;
-        }
+        // Convert LocalTime to UTC ISO if date is provided
+        const utcDate = date ? localToUTC(date) : undefined;
 
         // Prepare the final update data, encrypting the amount if provided
         const finalUpdateData = {
             ...updateData,
             ...(category && { category: new ObjectId(category) }),
-            ...(date && { date: toUTCDate(date) }),
+            ...(utcDate && { date: utcDate }),
             ...(amount !== undefined && { amount: encryptAmount(amount) }),
             updatedAt: getCurrentUTCDate()
         };
@@ -572,7 +549,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
 
             // Update each transaction while maintaining the temporal spacing
             const updatePromises = transactions.map((tx, index) => {
-                if (index === 0 && date) {
+                if (index === 0 && utcDate) {
                     // Only update the date of the first transaction if provided
                     return transactionsCollection.updateOne(
                         { _id: tx._id },

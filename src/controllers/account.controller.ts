@@ -129,6 +129,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             [currentYear.toString()]: createEncryptedYearRecord()
         };
 
+        // Create new account with UTC ISO dates
         const newAccount = {
             user_id: new ObjectId(userId),
             accountName,
@@ -141,23 +142,13 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
             updatedAt: getCurrentUTCDate()
         };
 
-        // Validate the date format
-        if (!DATE_REGEX.test(newAccount.createdAt) || !DATE_REGEX.test(newAccount.updatedAt)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid date format provided',
-                error: 'INVALID_DATE_FORMAT',
-                statusCode: 400
-            });
-            return;
-        }
-
         const result = await accountsCollection.insertOne(newAccount);
 
         if (!result.acknowledged) {
             throw new Error('Error occurred while creating account');
         }
 
+        // Frontend will handle UTC ISO to local time conversion
         const decryptedAccount = {
             ...newAccount,
             _id: result.insertedId.toString(),
@@ -166,6 +157,7 @@ export const createAccount = async (req: AuthRequest, res: Response): Promise<vo
 
         res.status(201).json({
             success: true,
+            message: 'Account created successfully',
             data: decryptedAccount,
             statusCode: 201
         });
@@ -200,7 +192,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Prepare the data for the update
+        // Prepare the data for the update with UTC ISO date
         const updateData: Partial<IAccount> = {
             updatedAt: getCurrentUTCDate()
         };
@@ -229,7 +221,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
 
         // Check if the update was successful
         if (!result) {
-            console.error('❌ Error during update: Account not found');
+            console.error('Error during update: Account not found');
             res.status(404).json({
                 success: false,
                 message: 'Account not found',
@@ -239,7 +231,7 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<vo
             return;
         }
 
-        // Modify the response to send decrypted data
+        // Frontend will handle UTC ISO to local time conversion
         const decryptedAccount = {
             ...result,
             _id: result._id.toString(),

@@ -262,7 +262,7 @@ export const login = async (req: LoginRequest, res: Response) => {
             });
         }
 
-        // Update the last login timestamp for the user
+        // Update the last login timestamp for the user in UTC ISO
         await usersCollection.updateOne(
             { _id: user._id },
             {
@@ -368,14 +368,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
         // Generate a 6-digit reset token
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // Token valid for 15 minutes
+        const resetTokenExpiry = getCurrentUTCDate(); // Store expiry in UTC ISO
 
         await usersCollection.updateOne(
             { _id: user._id },
             {
                 $set: {
                     resetToken: resetToken,
-                    resetTokenExpiry: resetTokenExpiry.toISOString()
+                    resetTokenExpiry: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes from now in UTC ISO
                 }
             }
         );
@@ -431,7 +431,7 @@ export const verifyResetToken = async (req: Request, res: Response) => {
             });
         }
 
-        // Check if the token is valid and not expired
+        // Check if the token is valid and not expired (comparing UTC ISO dates)
         const user = await usersCollection.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: getCurrentUTCDate() }

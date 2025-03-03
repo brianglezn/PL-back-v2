@@ -101,17 +101,6 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
             updatedAt: getCurrentUTCDate()
         };
 
-        // Validate the date format
-        if (!DATE_REGEX.test(newCategory.createdAt) || !DATE_REGEX.test(newCategory.updatedAt)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid date format',
-                error: 'INVALID_DATE_FORMAT',
-                statusCode: 400
-            });
-            return;
-        }
-
         // Insert the new category into the database
         const result = await categoriesCollection.insertOne(newCategory);
 
