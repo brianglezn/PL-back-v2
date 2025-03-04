@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "restoreDB": "ts-node --transpile-only src/scripts/restoreDB/restoreBackup.ts"
+    "restoreDB": "ts-node --transpile-only src/scripts/restoreBackup.ts"
   },
   "keywords": [],
   "author": "",

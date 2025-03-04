@@ -2,7 +2,7 @@
  * Script to restore the database from a backup file
  * 
  * Usage:
- * - npm run restoreDB # Uses the default backup file located in the src/scripts/restoreDB folder
+ * - npm run restoreDB # Uses the default backup file located in the src/scripts/ folder
  * - npm run restoreDB -- path/to/backup.json  # Specifies a backup file
  * 
  * The script performs three steps:
@@ -17,11 +17,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 // Import types from models
-import { IAccount } from '../../types/models/IAccount';
-import { ICategory } from '../../types/models/ICategory';
-import { ITransaction } from '../../types/models/ITransaction';
-import { IUser } from '../../types/models/IUser';
-import { INote } from '../../types/models/INote';
+import { IAccount } from '../types/models/IAccount';
+import { ICategory } from '../types/models/ICategory';
+import { ITransaction } from '../types/models/ITransaction';
+import { IUser } from '../types/models/IUser';
+import { INote } from '../types/models/INote';
 
 // Load environment variables
 dotenv.config();
@@ -29,7 +29,8 @@ dotenv.config();
 // Database configuration
 const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
-const DB_NAME = process.env.DB_NAME;
+// const DB_NAME = process.env.DB_NAME;
+const DB_NAME = 'ProfitAndLostDB_BCKP';
 const DB_URI = `mongodb+srv://${DB_USER}:${DB_PASS}@profit-lost.dojlby3.mongodb.net/?retryWrites=true&w=majority&ssl=true`;
 
 // Interface for backup data
