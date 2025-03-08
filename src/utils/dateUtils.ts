@@ -1,3 +1,15 @@
+// Frontend:
+// 1. Works in local time (LocalTime)
+// 2. Sends dates to the backend in LocalTime formatted as ISO
+// 3. Receives dates from the backend in UTC ISO and converts them to LocalTime
+
+// Backend:
+// 1. Works in UTC
+// 1. Receives LocalTime from the frontend formatted as ISO
+// 2. Converts to UTC ISO for storage
+// 3. Returns UTC ISO to the frontend
+ 
+
 // Regular expression to validate ISO UTC date format
 // Format: YYYY-MM-DDTHH:mm:ss.sssZ
 export const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
