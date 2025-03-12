@@ -39,7 +39,7 @@ export interface UserPreferences {
 }
 
 export type Language = 'enUS' | 'esES';
-export type Currency = 'USD' | 'EUR' | 'GBP';
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'MXN' | 'ARS' | 'CLP' | 'COP' | 'PEN' | 'UYU' | 'PYG' | 'BOB' | 'VES';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY';
 export type TimeFormat = '12h' | '24h';
 export type Theme = 'light' | 'dark';
