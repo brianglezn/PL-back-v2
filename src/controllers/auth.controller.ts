@@ -649,6 +649,30 @@ export const googleAuth = async (req: Request, res: Response) => {
                 ...newUser,
                 _id: result.insertedId
             };
+
+            // Send a welcome email to the new user
+            const transporter = nodemailer.createTransport({
+                host: 'smtp.hostinger.com',
+                port: 465,
+                secure: true,
+                auth: {
+                    user: 'no-reply@profit-lost.com',
+                    pass: process.env.EMAIL_PASSWORD
+                }
+            });
+
+            transporter.sendMail({
+                from: '"Profit-Lost" <no-reply@profit-lost.com>',
+                to: user.email,
+                subject: 'Welcome to Profit-Lost!',
+                html: getWelcomeEmailTemplate(user.name, 'https://profit-lost.com/dashboard')
+            }, (error, info) => {
+                if (error) {
+                    console.error('Failed to send welcome email:', error);
+                } else {
+                    console.log('Welcome email successfully sent:', info.messageId);
+                }
+            });
         }
 
         // Generate a JWT token for the authenticated user
