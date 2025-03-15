@@ -54,9 +54,7 @@ export const authMiddleware = (
 
         (req as AuthRequest).user = decoded;
         next();
-    } catch (error) {
-        console.error('❌ Error in auth middleware:', error);
-        
+    } catch (error) {        
         // Handle token expiration specifically
         if (error instanceof jwt.TokenExpiredError) {
             res.status(401).json({
